@@ -1,0 +1,67 @@
+/* src/components/Login.css */
+.login-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #faf8d1;
+}
+
+.login-form-wrapper {
+    width: 80%; /* Increase form size */
+    max-width: 600px; /* Adjust max-width as needed */
+    padding: 30px; /* Increase padding */
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: center; /* Center the title */
+}
+
+.login-form-wrapper h2 {
+    margin-bottom: 20px; /* Add space below the title */
+    font-size: 2rem; /* Increase the font size */
+    color: #333;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #555;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px; /* Increase input padding */
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1.1rem; /* Increase font size */
+}
+
+.login-button {
+    background-color: #5cb85c;
+    color: white;
+    padding: 15px 20px; /* Increase button padding */
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    font-size: 1.2rem; /* Increase font size */
+}
+
+.login-button:hover {
+    background-color: #449d44;
+}
