@@ -1,15 +1,31 @@
 // src/components/StudentLogin.jsx
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import './Login.css';
 
 function StudentLogin() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Add your login logic here
-        console.log('Logging in with:', username, password);
+        try {
+            const response = await axios.post('http://localhost:5000/student-login', {
+                username,
+                password
+            });
+
+            if (response.data.success) {
+                navigate('/student-dashboard');
+            } else {
+                alert('Login failed. Please check your credentials.');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            alert('An error occurred during login.');
+        }
     };
 
     return (

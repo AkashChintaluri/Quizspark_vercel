@@ -1,15 +1,45 @@
 // src/components/TeacherLogin.jsx
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import './Login.css';
 
 function TeacherLogin() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [isPressed, setIsPressed] = useState(false);
+    const [showPopup, setShowPopup] = useState(false);
+    const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
+    const buttonStyle = {
+        transform: isPressed ? 'scale(0.95)' : 'scale(1)',
+        transition: 'transform 0.1s',
+    };
+
+    const handleMouseDown = () => setIsPressed(true);
+    const handleMouseUp = () => setIsPressed(false);
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Add your login logic here
-        console.log('Logging in with:', username, password);
+        try {
+            const response = await axios.post('http://localhost:5000/teacher-login', {
+                username,
+                password
+            });
+
+            if (response.data.success) {
+                setShowPopup(true);
+                setTimeout(() => {
+                    setShowPopup(false);
+                    navigate('/teacher-dashboard');
+                }, 2000);
+            } else {
+                alert('Login failed. Please check your credentials.');
+            }
+        } catch (error) {
+            console.error('Login error:', error.response?.data || error.message);
+            alert(`An error occurred during login: ${error.response?.data?.error || error.message}`);
+        }
     };
 
     return (
@@ -37,9 +67,23 @@ function TeacherLogin() {
                             required
                         />
                     </div>
-                    <button type="submit" className="login-button">Login</button>
+                    <button
+                        type="submit"
+                        className="login-button"
+                        style={buttonStyle}
+                        onMouseDown={handleMouseDown}
+                        onMouseUp={handleMouseUp}
+                        onMouseLeave={handleMouseUp}
+                    >
+                        Login
+                    </button>
                 </form>
             </div>
+            {showPopup && (
+                <div className="popup">
+                    Login successful! Redirecting to dashboard...
+                </div>
+            )}
         </div>
     );
 }
