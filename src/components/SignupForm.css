@@ -1,35 +1,33 @@
 /* src/components/SignupForm.css */
 
 .signup-container {
-    height: 100vh;
-    position: fixed;
-    top: 0;
+    position: absolute;
+    top: 60px;
     left: 0;
-    right: 0;
-    bottom: 0;
+    width: 100%;
+    min-height: calc(100vh - 60px);
+    background-color: #f0f4f8;
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #faf8d1;
-    overflow: hidden;
+    padding: 40px 20px;
+    overflow-y: scroll;
 }
 
 .signup-form-wrapper {
-    margin-top: 50px;
-    width: 80%;
-    max-height: 600px;
-    max-width: 400px;
+    width: 100%;
+    max-width: 600px;
     padding: 30px;
     background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
 }
 
 .signup-form-wrapper h2 {
-    text-align: center;
+    font-size: 3rem;
+    color: #2c3e50;
     margin-bottom: 20px;
-    font-size: 2rem;
-    color: #333;
 }
 
 .signup-form {
@@ -44,51 +42,52 @@
 }
 
 .form-group label {
-    width: 100px;
+    width: 150px; /* Adjust this width as needed */
     text-align: right;
     padding-right: 10px;
-    color: #555;
+    color: #34495e;
+    font-size: 1.2rem;
 }
 
 .form-group input,
 .form-group select {
-    text-align: left;
     flex: 1;
     padding: 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-sizing: border-box;
+    border: 1px solid #ecf0f1;
+    border-radius: 8px;
     font-size: 1.1rem;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-color: white;
 }
 
 .form-group select {
-    text-align: left;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
     background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
     background-repeat: no-repeat;
-    background-position-x: 98%;
-    background-position-y: 50%;
-    padding-right: 30px;
+    background-position: right 12px center;
+    padding-right: 40px;
 }
 
 .signup-button {
-    background-color: #5cb85c;
+    background-color: #3498db;
     color: white;
     padding: 15px 20px;
     border: none;
-    border-radius: 4px;
+    border-radius: 50px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
     font-size: 1.2rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 20px;
     width: 100%;
-    text-align: center;
 }
 
 .signup-button:hover {
-    background-color: #449d44;
+    background-color: #2980b9;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
 .popup {
@@ -96,9 +95,20 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: #4CAF50;
+    background-color: #3498db;
     color: white;
     padding: 15px;
-    border-radius: 5px;
+    border-radius: 8px;
     z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+    .signup-form-wrapper {
+        padding: 20px;
+    }
+
+    .signup-form-wrapper h2 {
+        font-size: 2.5rem;
+    }
 }
