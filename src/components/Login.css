@@ -1,6 +1,9 @@
 /* src/components/Login.css */
+
+
 .login-container {
-    position: absolute;
+    height: 100vh;
+    position: fixed;
     top: 0;
     left: 0;
     right: 0;
@@ -9,6 +12,7 @@
     justify-content: center;
     align-items: center;
     background-color: #faf8d1;
+    overflow: hidden;
 }
 
 .login-form-wrapper {

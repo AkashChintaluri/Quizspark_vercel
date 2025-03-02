@@ -3,58 +3,50 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    outline: none; /*removes outlines*/
+    outline: none;
 }
 
 .home {
-    position: absolute; /* Changed from fixed to absolute */
-    top: 60px; /* Account for the header height */
+    position: absolute;
+    top: 60px;
     left: 0;
-    width: 100%; /* Full width */
-    min-height: calc(100vh - 60px); /* Changed from height to min-height */
-    background-color: #faf8d1;
+    width: 100%;
+    min-height: calc(100vh - 60px);
+    background-color: #f0f4f8;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start; /* Changed from center to allow scrolling */
-    padding: 20px;
-    overflow-y: auto; /* Allow vertical scrolling if needed */
+    justify-content: flex-start;
+    padding: 40px 20px;
+    overflow-y: scroll; /* Always show scrollbar */
 }
 
-
-.home::-webkit-scrollbar {
-    display: none;
-}
-
-/* Hide scrollbar in Firefox */
-.home {
-    scrollbar-width: none;
-}
-
-/* In Home.css */
 .home .content {
-    width: 100%; /* Occupy full width */
-    max-width: 1200px; /* Limit content width */
-    margin: 0 auto; /* Center content */
-    overflow-y: auto; /* Enable vertical scrolling */
-    padding: 10px;
-    position: relative; /* Ensure content is above background */
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    position: relative;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow-y: auto; /* Allow scrolling within the content */
 }
-
 
 .home-header {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 3rem;
 }
 
 .home-header h1 {
-    font-size: 2.5rem;
-    color: #333;
+    font-size: 3rem;
+    color: #2c3e50;
+    margin-bottom: 1rem;
 }
 
 .home-header p {
-    font-size: 1.2rem;
-    color: #666;
+    font-size: 1.3rem;
+    color: #34495e;
 }
 
 .home-main {
@@ -62,13 +54,16 @@
 }
 
 .features {
-    margin-bottom: 2rem;
+    margin-bottom: 3rem;
+    background-color: #ecf0f1;
+    padding: 30px;
+    border-radius: 8px;
 }
 
 .features h2 {
-    font-size: 1.8rem;
-    color: #333;
-    margin-bottom: 1rem;
+    font-size: 2rem;
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
 }
 
 .features ul {
@@ -77,63 +72,86 @@
 }
 
 .features li {
-    margin-bottom: 0.5rem;
-    font-size: 1.1rem;
-    color: #444;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    color: #34495e;
+    padding-left: 30px;
+    position: relative;
+}
+
+.features li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: #27ae60;
+    font-weight: bold;
 }
 
 .cta {
     text-align: center;
+    background-color: #3498db;
+    padding: 40px;
+    border-radius: 8px;
+    color: #ffffff;
 }
 
 .cta h2 {
-    font-size: 1.8rem;
-    color: #333;
-    margin-bottom: 1rem;
+    font-size: 2.2rem;
+    margin-bottom: 1.5rem;
 }
 
 .cta-buttons {
     display: flex;
     justify-content: center;
-    gap: 1.5rem;
+    gap: 2rem;
 }
 
 .cta-button {
-    padding: 10px 20px;
-    font-size: 1.1rem;
+    padding: 15px 30px;
+    font-size: 1.2rem;
     text-decoration: none;
-    border-radius: 5px;
-    transition: background-color 0.3s ease;
+    border-radius: 50px;
+    transition: all 0.3s ease;
     position: relative;
     z-index: 1;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .cta-button.student {
-    background-color: #4CAF50;
+    background-color: #27ae60;
     color: white;
 }
 
 .cta-button.teacher {
-    background-color: #2196F3;
+    background-color: #e74c3c;
     color: white;
 }
 
 .cta-button:hover {
-    opacity: 0.9;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
 .home-footer {
     text-align: center;
-    margin-top: 2rem;
-    color: #666;
+    margin-top: 3rem;
+    color: #7f8c8d;
+    font-size: 1.1rem;
 }
 
 @media (max-width: 768px) {
     .home-header h1 {
-        font-size: 2rem;
+        font-size: 2.5rem;
     }
 
     .cta-buttons {
         flex-direction: column;
+        gap: 1rem;
+    }
+
+    .features, .cta {
+        padding: 20px;
     }
 }

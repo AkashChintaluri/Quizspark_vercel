@@ -1,6 +1,8 @@
 /* src/components/SignupForm.css */
+
 .signup-container {
-    position: absolute;
+    height: 100vh;
+    position: fixed;
     top: 0;
     left: 0;
     right: 0;
@@ -9,10 +11,13 @@
     justify-content: center;
     align-items: center;
     background-color: #faf8d1;
+    overflow: hidden;
 }
 
 .signup-form-wrapper {
-    width: 100%;
+    margin-top: 50px;
+    width: 80%;
+    max-height: 600px;
     max-width: 400px;
     padding: 30px;
     background-color: #ffffff;
@@ -23,6 +28,7 @@
 .signup-form-wrapper h2 {
     text-align: center;
     margin-bottom: 20px;
+    font-size: 2rem;
     color: #333;
 }
 
@@ -39,33 +45,50 @@
 
 .form-group label {
     width: 100px;
-    margin-right: 10px;
     text-align: right;
+    padding-right: 10px;
     color: #555;
 }
 
 .form-group input,
 .form-group select {
+    text-align: left;
     flex: 1;
-    padding: 10px;
+    padding: 12px;
     border: 1px solid #ddd;
     border-radius: 4px;
-    font-size: 16px;
+    box-sizing: border-box;
+    font-size: 1.1rem;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-color: white;
+}
+
+.form-group select {
+    text-align: left;
+    background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+    background-repeat: no-repeat;
+    background-position-x: 98%;
+    background-position-y: 50%;
+    padding-right: 30px;
 }
 
 .signup-button {
     background-color: #5cb85c;
     color: white;
-    padding: 12px;
+    padding: 15px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 16px;
-    transition: background-color 0.3s ease, transform 0.1s;
+    transition: background-color 0.3s ease;
+    font-size: 1.2rem;
+    width: 100%;
+    text-align: center;
 }
 
 .signup-button:hover {
-    background-color: #4cae4c;
+    background-color: #449d44;
 }
 
 .popup {

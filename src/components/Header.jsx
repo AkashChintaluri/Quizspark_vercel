@@ -7,7 +7,7 @@ function Header() {
     return (
         <header className="navbar">
             <div className="navbar-content">
-                <Link to="/" className="title">BuzzQuiz</Link>
+                <Link to="/" className="title">QuizSpark</Link>
                 <div className="buttons">
                     <Link to="/signup" className="button">Signup</Link>
                     <Link to="/student-login" className="button">Student Login</Link>

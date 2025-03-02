@@ -65,7 +65,7 @@ const SidebarContent = ({ onClose, ...rest }) => {
             {...rest}>
             <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
                 <Text fontSize="2xl" fontFamily="monospace" fontWeight="bold">
-                    BuzzQuizz
+                    QuizSpark
                 </Text>
                 <CloseButton display={{ base: 'flex', md: 'none' }} onClick={onClose} />
             </Flex>
@@ -93,8 +93,8 @@ const NavItem = ({ children, ...rest }) => {
                 role="group"
                 cursor="pointer"
                 _hover={{
-                    bg: '#fbf49f',
-                    color: 'black',
+                    bg: 'cyan.400',
+                    color: 'White',
                     fontWeight: 'bold',
                 }}
                 {...rest}>
@@ -124,7 +124,7 @@ const MobileNav = ({ onOpen, ...rest }) => {
             </Button>
 
             <Text fontSize="2xl" ml="8" fontFamily="monospace" fontWeight="bold">
-                BuzzQuizz
+                QuizSpark
             </Text>
         </Flex>
     )

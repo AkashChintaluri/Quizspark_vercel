@@ -8,13 +8,13 @@ function Home() {
         <div className="home">
             <div className="content">
                 <header className="home-header">
-                    <h1>Welcome to BuzzQuiz</h1>
+                    <h1>Welcome to QuizSpark</h1>
                     <p>The Ultimate Quiz Platform for Students and Teachers</p>
                 </header>
 
                 <main className="home-main">
                     <section className="features">
-                        <h2>Why Choose BuzzQuiz?</h2>
+                        <h2>Why Choose QuizSpark?</h2>
                         <ul>
                             <li>Interactive and engaging quizzes</li>
                             <li>Easy-to-use interface for both students and teachers</li>
@@ -33,7 +33,7 @@ function Home() {
                 </main>
 
                 <footer className="home-footer">
-                    <p>&copy; 2025 BuzzQuiz. All rights reserved.</p>
+                    <p>&copy; 2025 QuizSpark. All rights reserved.</p>
                 </footer>
             </div>
         </div>
