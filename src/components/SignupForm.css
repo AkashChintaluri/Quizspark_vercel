@@ -8,7 +8,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #faf8d1;;
+    background-color: #faf8d1;
 }
 
 .signup-form-wrapper {
@@ -32,18 +32,21 @@
 }
 
 .form-group {
+    display: flex;
+    align-items: center;
     margin-bottom: 15px;
 }
 
 .form-group label {
-    display: block;
-    margin-bottom: 5px;
+    width: 100px;
+    margin-right: 10px;
+    text-align: right;
     color: #555;
 }
 
 .form-group input,
 .form-group select {
-    width: 100%;
+    flex: 1;
     padding: 10px;
     border: 1px solid #ddd;
     border-radius: 4px;
@@ -58,9 +61,21 @@
     border-radius: 4px;
     cursor: pointer;
     font-size: 16px;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3s ease, transform 0.1s;
 }
 
 .signup-button:hover {
     background-color: #4cae4c;
+}
+
+.popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #4CAF50;
+    color: white;
+    padding: 15px;
+    border-radius: 5px;
+    z-index: 1000;
 }
