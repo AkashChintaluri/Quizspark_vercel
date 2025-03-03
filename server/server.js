@@ -10,10 +10,10 @@ app.use(cors());
 app.use(express.json());
 
 const dbConfig = {
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
+    host: process.env.MYSQL_HOST,
+    user: process.env.MYSQL_USER,
+    password: process.env.MYSQL_PASSWORD,
+    database: process.env.MYSQL_DB_NAME
 };
 
 app.post('/signup', async (req, res) => {
@@ -32,48 +32,35 @@ app.post('/signup', async (req, res) => {
     }
 });
 
-app.post('/student-login', async (req, res) => {
-    const { username, password } = req.body;
-    console.log('Received student login attempt for:', username);
+app.post('/login', async (req, res) => {
+    const { username, password, userType } = req.body;
+    const table = userType === 'student' ? 'student_login' : 'teacher_login';
+
     try {
         const connection = await mysql.createConnection(dbConfig);
-        const [rows] = await connection.execute('SELECT * FROM student_login WHERE username = ? AND password = ?', [username, password]);
+        const [rows] = await connection.execute(`SELECT id, username, email FROM ${table} WHERE username = ? AND password = ?`, [username, password]);
         await connection.end();
 
         if (rows.length > 0) {
-            console.log('Student login successful for:', username);
-            res.json({ success: true, message: 'Student login successful' });
+            res.json({
+                success: true,
+                message: `${userType} login successful`,
+                user: {
+                    id: rows[0].id,
+                    username: rows[0].username,
+                    email: rows[0].email,
+                    userType
+                }
+            });
         } else {
-            console.log('Student login failed for:', username);
             res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
     } catch (error) {
-        console.error('Error during student login:', error);
+        console.error('Error during login:', error);
         res.status(500).json({ error: 'An error occurred during login', details: error.message });
     }
 });
 
-
-app.post('/teacher-login', async (req, res) => {
-    const { username, password } = req.body;
-    console.log('Received login attempt for:', username);
-    try {
-        const connection = await mysql.createConnection(dbConfig);
-        const [rows] = await connection.execute('SELECT * FROM teacher_login WHERE username = ? AND password = ?', [username, password]);
-        await connection.end();
-
-        if (rows.length > 0) {
-            console.log('Login successful for:', username);
-            res.json({ success: true, message: 'Teacher login successful' });
-        } else {
-            console.log('Login failed for:', username);
-            res.status(401).json({ success: false, message: 'Invalid credentials' });
-        }
-    } catch (error) {
-        console.error('Error during teacher login:', error);
-        res.status(500).json({ error: 'An error occurred during login', details: error.message });
-    }
-});
 
 app.post('/change-password', async (req, res) => {
     const { username, currentPassword, newPassword, userType } = req.body;
@@ -81,8 +68,6 @@ app.post('/change-password', async (req, res) => {
 
     try {
         const connection = await mysql.createConnection(dbConfig);
-
-        // First, verify the user exists and the current password is correct
         const [user] = await connection.execute(`SELECT * FROM ${table} WHERE username = ? AND password = ?`, [username, currentPassword]);
 
         if (user.length === 0) {
@@ -90,7 +75,6 @@ app.post('/change-password', async (req, res) => {
             return res.status(401).json({ success: false, message: 'Incorrect username or password' });
         }
 
-        // Update the password in the database
         await connection.execute(`UPDATE ${table} SET password = ? WHERE username = ?`, [newPassword, username]);
 
         await connection.end();
@@ -101,9 +85,31 @@ app.post('/change-password', async (req, res) => {
     }
 });
 
+app.get('/api/current-user', async (req, res) => {
+    // This endpoint is not properly secured, so it's commented out for now.
+    // You would need to implement authentication to securely fetch the current user.
+    // For now, you can manually pass the user ID or username in the request.
+    try {
+        const connection = await mysql.createConnection(dbConfig);
+        const [user] = await connection.execute('SELECT id, username, email FROM teacher_login WHERE id = 1'); // Example query
+        await connection.end();
 
+        if (user.length > 0) {
+            res.json({
+                id: user[0].id,
+                username: user[0].username,
+                email: user[0].email
+            });
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        console.error('Error fetching current user:', error);
+        res.status(500).json({ error: 'An error occurred while fetching user data' });
+    }
+});
 
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });

@@ -1,4 +1,3 @@
-// src/components/TeacherLogin.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -22,12 +21,14 @@ function TeacherLogin() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await axios.post('http://localhost:5000/teacher-login', {
+            const response = await axios.post('http://localhost:5000/login', {
                 username,
-                password
+                password,
+                userType: 'teacher'
             });
 
             if (response.data.success) {
+                localStorage.setItem('user', JSON.stringify(response.data.user));
                 setShowPopup(true);
                 setTimeout(() => {
                     setShowPopup(false);
