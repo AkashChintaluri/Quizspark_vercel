@@ -1,0 +1,147 @@
+/* MakeQuizzes.css */
+
+.make-quizzes {
+    background-color: #ecf0f1;
+    padding: 30px;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.make-quizzes h2 {
+    color: #2c3e50;
+    font-size: 24px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.quiz-name-section {
+    margin-bottom: 20px;
+    width: 100%;
+}
+
+.quiz-name-input, .question-input, .option-input input[type="text"] {
+    width: 100%;
+    padding: 15px;
+    font-size: 18px;
+    border: 1px solid #bdc3c7;
+    border-radius: 5px;
+    transition: border-color 0.3s;
+}
+
+.quiz-name-input:focus, .question-input:focus, .option-input input[type="text"]:focus {
+    border-color: #3498db;
+    outline: none;
+}
+
+.question-form {
+    margin-bottom: 30px;
+    background-color: white;
+    padding: 25px;
+    border-radius: 10px;
+    width: 100%;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.question-input {
+    margin-bottom: 15px;
+}
+
+.options-section {
+    margin-bottom: 20px;
+}
+
+.option-input {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.option-input input[type="text"] {
+    flex-grow: 1;
+    margin-right: 10px;
+}
+
+.option-input label {
+    display: flex;
+    align-items: center;
+    color: #2c3e50;
+}
+
+.option-input input[type="radio"] {
+    margin-right: 5px;
+}
+
+.add-question-btn, .submit-quiz-btn {
+    padding: 15px 25px;
+    font-size: 18px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    transition: background-color 0.3s;
+    align-self: center;
+}
+
+.add-question-btn {
+    background-color: #3498db;
+}
+
+.add-question-btn:hover {
+    background-color: #2980b9;
+}
+
+.submit-quiz-btn {
+    background-color: #2ecc71;
+    margin-top: 20px;
+}
+
+.submit-quiz-btn:hover {
+    background-color: #27ae60;
+}
+
+.questions-list {
+    background-color: white;
+    padding: 25px;
+    border-radius: 10px;
+    width: 100%;
+}
+
+.questions-list h3 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+}
+
+.questions-list ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.questions-list li {
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    color: #2c3e50;
+}
+
+.quiz-code-section {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #e8f0fe;
+    border-radius: 5px;
+    color: #2c3e50;
+    text-align: center;
+}
+
+.quiz-code-section p {
+    font-size: 20px;
+    margin: 0;
+}
+
+.quiz-code-section strong {
+    color: #2980b9;
+}

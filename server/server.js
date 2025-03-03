@@ -75,6 +75,33 @@ app.post('/teacher-login', async (req, res) => {
     }
 });
 
+app.post('/change-password', async (req, res) => {
+    const { username, currentPassword, newPassword, userType } = req.body;
+    const table = userType === 'student' ? 'student_login' : 'teacher_login';
+
+    try {
+        const connection = await mysql.createConnection(dbConfig);
+
+        // First, verify the user exists and the current password is correct
+        const [user] = await connection.execute(`SELECT * FROM ${table} WHERE username = ? AND password = ?`, [username, currentPassword]);
+
+        if (user.length === 0) {
+            await connection.end();
+            return res.status(401).json({ success: false, message: 'Incorrect username or password' });
+        }
+
+        // Update the password in the database
+        await connection.execute(`UPDATE ${table} SET password = ? WHERE username = ?`, [newPassword, username]);
+
+        await connection.end();
+        res.json({ success: true, message: 'Password changed successfully' });
+    } catch (error) {
+        console.error('Error during password change:', error);
+        res.status(500).json({ success: false, error: 'An error occurred during password change', details: error.message });
+    }
+});
+
+
 
 const PORT = 5000;
 app.listen(PORT, () => {
