@@ -1,9 +1,6 @@
 import express from 'express';
 import pkg from 'pg';
-
-const {
-    Pool
-} = pkg;
+const { Pool } = pkg;
 import cors from 'cors';
 import dotenv from 'dotenv';
 
@@ -76,7 +73,9 @@ function startServer() {
 
     // New API endpoint for getting quizzes using quiz_code
     app.get('/api/quizzes/:quiz_code', async (req, res) => {
-        const { quiz_code } = req.params;
+        const {
+            quiz_code
+        } = req.params;
 
         try {
             const query = `
@@ -93,7 +92,9 @@ function startServer() {
 
             if (result.rows.length === 0) {
                 console.log(`Quiz with code ${quiz_code} not found`); // Debugging
-                return res.status(404).json({ message: 'Quiz not found' });
+                return res.status(404).json({
+                    message: 'Quiz not found'
+                });
             }
 
             const quiz = result.rows[0];
@@ -113,15 +114,19 @@ function startServer() {
     });
 
     app.post('/api/submit-quiz', async (req, res) => {
-        const { quiz_code, user_id, answers } = req.body;
+        const {
+            quiz_code,
+            user_id,
+            answers
+        } = req.body;
 
         try {
-            // Fetch the quiz details
+            // First, fetch the quiz details
             const quizQuery = `
-            SELECT quiz_id, questions
-            FROM quizzes
-            WHERE quiz_code = $1;
-        `;
+                SELECT quiz_id, questions
+                FROM quizzes
+                WHERE quiz_code = $1;
+            `;
             const quizResult = await pool.query(quizQuery, [quiz_code]);
 
             if (quizResult.rows.length === 0) {
@@ -138,20 +143,19 @@ function startServer() {
             let totalQuestions = questions.length;
 
             questions.forEach((question, index) => {
-                const correctAnswer = question.options.findIndex(option => option.is_correct);
-                const userAnswer = answers[index];
-
-                if (correctAnswer === userAnswer) {
+                const correctAnswerIndex = question.options.findIndex(option => option.is_correct);
+                const userAnswer = parseInt(answers[index]); // Parse the user's answer to an integer
+                if (correctAnswerIndex === userAnswer) {
                     score++;
                 }
             });
 
             // Insert the attempt into the database
             const insertQuery = `
-            INSERT INTO quiz_attempts (quiz_id, user_id, score, total_questions, answers)
-            VALUES ($1, $2, $3, $4, $5)
-            RETURNING attempt_id;
-        `;
+                INSERT INTO quiz_attempts (quiz_id, user_id, score, total_questions, answers)
+                VALUES ($1, $2, $3, $4, $5)
+                RETURNING attempt_id;
+            `;
             const insertValues = [quiz.quiz_id, user_id, score, totalQuestions, JSON.stringify(answers)];
             const insertResult = await pool.query(insertQuery, insertValues);
 
@@ -163,16 +167,16 @@ function startServer() {
                 score: score,
                 totalQuestions: totalQuestions,
                 question_results: questions.map((question, index) => {
-                    const correctAnswer = question.options.findIndex(option => option.is_correct);
-                    const userAnswer = answers[index];
-                    const isCorrect = correctAnswer === userAnswer;
+                    const correctAnswerIndex = question.options.findIndex(option => option.is_correct);
+                    const userAnswer = parseInt(answers[index]); // Parse the user's answer to an integer
+                    const isCorrect = correctAnswerIndex === userAnswer;
 
                     return {
                         question_index: index,
                         question_text: question.question_text,
                         is_correct: isCorrect,
                         selected_option: userAnswer,
-                        correct_option: correctAnswer
+                        correct_option: correctAnswerIndex
                     };
                 })
             });
@@ -187,70 +191,61 @@ function startServer() {
         }
     });
 
-
     app.get('/api/quiz-result/:quiz_code/:user_id', async (req, res) => {
         const { quiz_code, user_id } = req.params;
 
         try {
             // Get the quiz details
             const quizQuery = `
-                SELECT q.quiz_id, q.quiz_name, q.questions
-                FROM quizzes q
-                WHERE q.quiz_code = $1;
-            `;
-            const quizResult = await pool.query(quizQuery, [quiz_code]);
+        SELECT q.quiz_id, q.quiz_name, q.questions, qa.answers, qa.score, qa.total_questions
+        FROM quizzes q
+        LEFT JOIN quiz_attempts qa ON q.quiz_id = qa.quiz_id AND qa.user_id = $2
+        WHERE q.quiz_code = $1;
+    `;
+
+            const quizResult = await pool.query(quizQuery, [quiz_code, user_id]);
 
             if (quizResult.rows.length === 0) {
                 return res.status(404).json({ message: 'Quiz not found' });
             }
 
             const quizData = quizResult.rows[0];
-
-            // Get the user's attempt
-            const attemptQuery = `
-                SELECT score, total_questions, answers
-                FROM quiz_attempts
-                WHERE quiz_id = $1 AND user_id = $2;
-            `;
-            const attemptResult = await pool.query(attemptQuery, [quizData.quiz_id, user_id]);
-
-            let attemptData = null;
-            if (attemptResult.rows.length > 0) {
-                attemptData = attemptResult.rows[0];
-            }
-
             const questions = quizData.questions.questions;
 
-            let userAnswers = null;
-            if (attemptData) {
-                try {
-                    userAnswers = JSON.parse(attemptData.answers);
-                } catch (parseError) {
-                    console.error("Error parsing answers:", parseError);
-                    userAnswers = {}; // Provide a default value in case of error
+            // Handle the case where answers might be a string or an object
+            let userAnswers = {};
+            if (quizData.answers) {
+                if (typeof quizData.answers === 'string') {
+                    try {
+                        userAnswers = JSON.parse(quizData.answers);
+                    } catch (error) {
+                        console.error('Error parsing answers:', error);
+                    }
+                } else if (typeof quizData.answers === 'object') {
+                    userAnswers = quizData.answers;
                 }
             }
 
             const quizResults = {
                 quizName: quizData.quiz_name,
-                score: attemptData ? attemptData.score : 0,
-                totalQuestions: attemptData ? attemptData.total_questions : questions.length,
+                score: quizData.score || 0,
+                totalQuestions: quizData.total_questions || questions.length,
                 questions: questions.map((question, index) => {
-                    const correctAnswers = question.options
-                        .map((option, optionIndex) => (option.is_correct ? optionIndex : -1))
-                        .filter(index => index !== -1);
-                    const selectedAnswers = userAnswers && userAnswers[index] ? userAnswers[index] : [];
+                    const correctAnswerIndex = question.options.findIndex(option => option.is_correct);
+                    const userAnswer = userAnswers[index];
 
                     return {
                         question_text: question.question_text,
                         options: question.options.map((option, optionIndex) => ({
                             ...option,
-                            isSelected: selectedAnswers.includes(optionIndex),
+                            isSelected: userAnswer == optionIndex,
+                            isCorrectAnswer: optionIndex == correctAnswerIndex,
                         })),
                     };
                 }),
-                userAnswers: userAnswers || {} // Ensure this is always an object
+                userAnswers: userAnswers
             };
+
             res.json(quizResults);
         } catch (error) {
             console.error('Error fetching quiz result:', error);
@@ -261,9 +256,13 @@ function startServer() {
         }
     });
 
+
     // New endpoint to check if user has already attempted the quiz before starting
     app.get('/api/check-quiz-attempt/:quizCode/:userId', async (req, res) => {
-        const { quizCode, userId } = req.params;
+        const {
+            quizCode,
+            userId
+        } = req.params;
 
         try {
             // First, get the quiz_id from the quiz_code
@@ -271,7 +270,9 @@ function startServer() {
             const quizResult = await pool.query(quizQuery, [quizCode]);
 
             if (quizResult.rows.length === 0) {
-                return res.status(404).json({ message: 'Quiz not found' });
+                return res.status(404).json({
+                    message: 'Quiz not found'
+                });
             }
 
             const quizId = quizResult.rows[0].quiz_id;
@@ -282,14 +283,22 @@ function startServer() {
 
             if (attemptResult.rows.length > 0) {
                 // An attempt exists
-                res.json({ hasAttempted: true, message: 'You have already attempted this quiz.' });
+                res.json({
+                    hasAttempted: true,
+                    message: 'You have already attempted this quiz.'
+                });
             } else {
                 // No attempt exists
-                res.json({ hasAttempted: false });
+                res.json({
+                    hasAttempted: false
+                });
             }
         } catch (error) {
             console.error('Error checking quiz attempt:', error);
-            res.status(500).json({ message: 'Error checking quiz attempt', error: error.message });
+            res.status(500).json({
+                message: 'Error checking quiz attempt',
+                error: error.message
+            });
         }
     });
 

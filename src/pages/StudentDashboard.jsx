@@ -83,7 +83,10 @@ function HomeContent({ currentUser }) {
 }
 
 
-function TakeQuizContent({ currentUser, setActiveTab }) {
+function TakeQuizContent({
+                             currentUser,
+                             setActiveTab
+                         }) {
     const [quizCode, setQuizCode] = useState('');
     const [quizData, setQuizData] = useState(null);
     const [error, setError] = useState('');
@@ -150,18 +153,15 @@ function TakeQuizContent({ currentUser, setActiveTab }) {
 
     const handleAnswerChange = (questionIndex, optionIndex) => {
         setSelectedAnswers(prevAnswers => {
-            if (prevAnswers[questionIndex] === optionIndex) {
-                // If the same option is clicked again, remove the selection
-                const newAnswers = { ...prevAnswers };
-                delete newAnswers[questionIndex];
-                return newAnswers;
+            const newAnswers = {
+                ...prevAnswers
+            };
+            if (newAnswers[questionIndex] === optionIndex) {
+                delete newAnswers[questionIndex]; // Deselect option
             } else {
-                // Otherwise, update or add the selected option
-                return {
-                    ...prevAnswers,
-                    [questionIndex]: optionIndex,
-                };
+                newAnswers[questionIndex] = optionIndex; //Select new option
             }
+            return newAnswers;
         });
     };
 
@@ -218,7 +218,7 @@ function TakeQuizContent({ currentUser, setActiveTab }) {
                                                 name={`question_${index}`} // Unique name for each group of radio buttons
                                                 value={optionIndex}
                                                 checked={selectedAnswers[index] === optionIndex}
-                                                onChange={() => handleAnswerChange(index, Number(optionIndex))}
+                                                onChange={() => handleAnswerChange(index, optionIndex)}
 
                                             />
                                             <span className="option-text">{option.text}</span>
@@ -278,7 +278,6 @@ function TakeQuizContent({ currentUser, setActiveTab }) {
     );
 }
 
-
 function ResultsContent({ currentUser }) {
     const [quizCode, setQuizCode] = useState('');
     const [quizResult, setQuizResult] = useState(null);
@@ -317,13 +316,13 @@ function ResultsContent({ currentUser }) {
                         <p>{question.question_text}</p>
                         <div className="options-container">
                             {question.options.map((option, optionIndex) => {
-                                const isSelected = quizResult.userAnswers[questionIndex] === optionIndex;
-                                const isCorrect = option.is_correct;
+                                const isSelected = quizResult.userAnswers[questionIndex] == optionIndex;
+                                const isCorrectAnswer = option.isCorrectAnswer;
 
                                 let className = 'option-item';
-                                if (isCorrect) {
+                                if (isCorrectAnswer) {
                                     className += ' correct';
-                                } else if (isSelected && !isCorrect) {
+                                } else if (isSelected && !isCorrectAnswer) {
                                     className += ' incorrect';
                                 }
 
