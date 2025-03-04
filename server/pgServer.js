@@ -1,6 +1,8 @@
 import express from 'express';
 import pkg from 'pg';
-const { Pool } = pkg;
+const {
+    Pool
+} = pkg;
 import cors from 'cors';
 import dotenv from 'dotenv';
 
@@ -67,6 +69,178 @@ function startServer() {
                 message: 'Failed to create quiz',
                 error: error.message,
                 stack: error.stack // Helpful for debugging
+            });
+        }
+    });
+
+    // New API endpoint for getting quizzes using quiz_code
+    app.get('/api/quizzes/:quiz_code', async (req, res) => {
+        const {
+            quiz_code
+        } = req.params;
+
+        try {
+            const query = `
+                SELECT quiz_name, questions
+                FROM quizzes
+                WHERE quiz_code = $1;
+            `;
+
+            const values = [quiz_code];
+
+            const result = await pool.query(query, values);
+
+            if (result.rows.length === 0) {
+                // Quiz not found
+                return res.status(404).json({
+                    message: 'Quiz not found'
+                });
+            }
+
+            const quiz = result.rows[0];
+            res.status(200).json({
+                quiz_name: quiz.quiz_name,
+                questions: quiz.questions
+            });
+
+        } catch (error) {
+            console.error('Error fetching quiz:', error);
+            res.status(500).json({
+                message: 'Failed to fetch quiz',
+                error: error.message,
+                stack: error.stack
+            });
+        }
+    });
+
+    app.post('/api/submit-quiz', async (req, res) => {
+        const { quiz_code, user_id, answers } = req.body;
+
+        try {
+            // First, fetch the quiz details
+            const quizQuery = `
+                SELECT quiz_id, questions
+                FROM quizzes
+                WHERE quiz_code = $1;
+            `;
+            const quizResult = await pool.query(quizQuery, [quiz_code]);
+
+            if (quizResult.rows.length === 0) {
+                return res.status(404).json({
+                    message: 'Quiz not found'
+                });
+            }
+
+            const quiz = quizResult.rows[0];
+
+            // Check if the user has already submitted this quiz
+            const checkAttemptQuery = `
+                SELECT attempt_id FROM quiz_attempts
+                WHERE quiz_id = $1 AND user_id = $2
+            `;
+            const checkAttemptResult = await pool.query(checkAttemptQuery, [quiz.quiz_id, user_id]);
+
+            if (checkAttemptResult.rows.length > 0) {
+                // User has already submitted this quiz
+                return res.status(400).json({
+                    message: 'You have already submitted this quiz.'
+                });
+            }
+
+            const questions = quiz.questions.questions;
+
+            // Calculate score
+            let score = 0;
+            let totalQuestions = questions.length;
+
+            questions.forEach((question, index) => {
+                const correctAnswers = question.options
+                    .map((option, optionIndex) => option.is_correct ? optionIndex : -1)
+                    .filter(index => index !== -1);
+
+                const userAnswers = answers[index] || [];
+
+                if (JSON.stringify(correctAnswers.sort()) === JSON.stringify(userAnswers.sort())) {
+                    score++;
+                }
+            });
+
+            // Insert the attempt into the database
+            const insertQuery = `
+                INSERT INTO quiz_attempts (quiz_id, user_id, score, total_questions, answers)
+                VALUES ($1, $2, $3, $4, $5)
+                RETURNING attempt_id;
+            `;
+            const insertValues = [quiz.quiz_id, user_id, score, totalQuestions, JSON.stringify(answers)];
+            const insertResult = await pool.query(insertQuery, insertValues);
+
+            const attemptId = insertResult.rows[0].attempt_id;
+
+            res.status(201).json({
+                message: 'Quiz submitted successfully',
+                attemptId: attemptId,
+                score: score,
+                totalQuestions: totalQuestions,
+                question_results: questions.map((question, index) => {
+                    const correctAnswers = question.options
+                        .map((option, optionIndex) => option.is_correct ? optionIndex : -1)
+                        .filter(index => index !== -1);
+                    const userAnswers = answers[index] || [];
+                    const isCorrect = JSON.stringify(correctAnswers.sort()) === JSON.stringify(userAnswers.sort());
+
+                    return {
+                        question_index: index,
+                        question_text: question.question_text,
+                        is_correct: isCorrect,
+                        selected_options: userAnswers,
+                        correct_options: correctAnswers
+                    };
+                })
+            });
+
+        } catch (error) {
+            console.error('Error submitting quiz:', error);
+            res.status(500).json({
+                message: 'Failed to submit quiz',
+                error: error.message,
+                stack: error.stack // Helpful for debugging
+            });
+        }
+    });
+
+    app.get('/api/quiz-result/:quiz_code/:user_id', async (req, res) => {
+        const { quiz_code, user_id } = req.params;
+
+        try {
+            // Get the quiz details
+            const quizQuery = `
+                SELECT q.quiz_id, q.quiz_name, q.questions, qa.score, qa.total_questions, qa.answers
+                FROM quizzes q
+                LEFT JOIN quiz_attempts qa ON q.quiz_id = qa.quiz_id AND qa.user_id = $2
+                WHERE q.quiz_code = $1;
+        `;
+            const result = await pool.query(quizQuery, [quiz_code, user_id]);
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ message: 'Quiz not found' });
+            }
+
+            const quizData = result.rows[0];
+            const hasAttempted = quizData.score !== null;
+
+            res.json({
+                quizName: quizData.quiz_name,
+                questions: quizData.questions.questions,
+                hasAttempted,
+                score: quizData.score,
+                totalQuestions: quizData.total_questions,
+                userAnswers: hasAttempted ? JSON.parse(quizData.answers) : null
+            });
+        } catch (error) {
+            console.error('Error fetching quiz result:', error);
+            res.status(500).json({
+                message: 'Failed to fetch quiz result',
+                error: error.message
             });
         }
     });

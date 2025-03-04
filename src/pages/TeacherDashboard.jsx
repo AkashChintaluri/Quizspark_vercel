@@ -42,7 +42,11 @@ function Sidebar({
     return (
         <div className="sidebar">
             <h2>Teacher Dashboard</h2>
-            {currentUser && <p>Welcome, {currentUser.username}!</p>}
+            {currentUser && (
+                <div className="welcome-box"> {/* Added wrapper div */}
+                    <p>Welcome, {currentUser.username}!</p>
+                </div>
+            )}
 
             <nav>
                 <ul>

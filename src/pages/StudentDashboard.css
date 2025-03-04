@@ -1,4 +1,4 @@
-/* TeacherDashboard.css */
+/* StudentDashboard.css */
 
 /* Reset default styles */
 html,
@@ -22,7 +22,7 @@ body {
 }
 
 /* Dashboard Layout */
-.teacher-dashboard {
+.student-dashboard {
     display: flex;
     min-height: 100vh;
     width: 100%;
@@ -84,6 +84,7 @@ body {
     overflow-y: auto; /* Enables vertical scrolling for content */
     overflow-x: hidden; /* Prevents horizontal scrolling */
     height: 100vh; /* Make content take full height */
+    width: calc(100% - 250px); /* Ensures content stretches to the right edge */
 }
 
 .content h2 {
