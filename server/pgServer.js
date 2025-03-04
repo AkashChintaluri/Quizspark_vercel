@@ -75,9 +75,7 @@ function startServer() {
 
     // New API endpoint for getting quizzes using quiz_code
     app.get('/api/quizzes/:quiz_code', async (req, res) => {
-        const {
-            quiz_code
-        } = req.params;
+        const { quiz_code } = req.params;
 
         try {
             const query = `
@@ -88,13 +86,13 @@ function startServer() {
 
             const values = [quiz_code];
 
+            console.log("Executing query:", query, "with values:", values); // Debugging
+
             const result = await pool.query(query, values);
 
             if (result.rows.length === 0) {
-                // Quiz not found
-                return res.status(404).json({
-                    message: 'Quiz not found'
-                });
+                console.log(`Quiz with code ${quiz_code} not found`); // Debugging
+                return res.status(404).json({ message: 'Quiz not found' });
             }
 
             const quiz = result.rows[0];
@@ -132,20 +130,6 @@ function startServer() {
             }
 
             const quiz = quizResult.rows[0];
-
-            // Check if the user has already submitted this quiz
-            const checkAttemptQuery = `
-                SELECT attempt_id FROM quiz_attempts
-                WHERE quiz_id = $1 AND user_id = $2
-            `;
-            const checkAttemptResult = await pool.query(checkAttemptQuery, [quiz.quiz_id, user_id]);
-
-            if (checkAttemptResult.rows.length > 0) {
-                // User has already submitted this quiz
-                return res.status(400).json({
-                    message: 'You have already submitted this quiz.'
-                });
-            }
 
             const questions = quiz.questions.questions;
 
@@ -242,6 +226,38 @@ function startServer() {
                 message: 'Failed to fetch quiz result',
                 error: error.message
             });
+        }
+    });
+
+    // New endpoint to check if user has already attempted the quiz before starting
+    app.get('/api/check-quiz-attempt/:quizCode/:userId', async (req, res) => {
+        const { quizCode, userId } = req.params;
+
+        try {
+            // First, get the quiz_id from the quiz_code
+            const quizQuery = 'SELECT quiz_id FROM quizzes WHERE quiz_code = $1';
+            const quizResult = await pool.query(quizQuery, [quizCode]);
+
+            if (quizResult.rows.length === 0) {
+                return res.status(404).json({ message: 'Quiz not found' });
+            }
+
+            const quizId = quizResult.rows[0].quiz_id;
+
+            // Now check for an existing attempt
+            const attemptQuery = 'SELECT * FROM quiz_attempts WHERE quiz_id = $1 AND user_id = $2';
+            const attemptResult = await pool.query(attemptQuery, [quizId, userId]);
+
+            if (attemptResult.rows.length > 0) {
+                // An attempt exists
+                res.json({ hasAttempted: true, message: 'You have already attempted this quiz.' });
+            } else {
+                // No attempt exists
+                res.json({ hasAttempted: false });
+            }
+        } catch (error) {
+            console.error('Error checking quiz attempt:', error);
+            res.status(500).json({ message: 'Error checking quiz attempt', error: error.message });
         }
     });
 

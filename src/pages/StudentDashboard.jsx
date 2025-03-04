@@ -24,20 +24,13 @@ function StudentDashboard() {
 
     return (
         <div className="student-dashboard">
-            <Sidebar activeTab={activeTab}
-                     setActiveTab={setActiveTab}
-                     currentUser={currentUser}/>
-            <Content activeTab={activeTab}
-                     currentUser={currentUser}/>
+            <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} currentUser={currentUser} />
+            <Content activeTab={activeTab} setActiveTab={setActiveTab} currentUser={currentUser} />
         </div>
     );
 }
 
-function Sidebar({
-                     activeTab,
-                     setActiveTab,
-                     currentUser
-                 }) {
+function Sidebar({ activeTab, setActiveTab, currentUser }) {
     return (
         <div className="sidebar">
             <h2>Student Dashboard</h2>
@@ -65,37 +58,31 @@ function Sidebar({
     );
 }
 
-function Content({
-                     activeTab,
-                     currentUser
-                 }) {
+function Content({ activeTab, setActiveTab, currentUser }) {
     switch (activeTab) {
         case 'Home':
-            return <HomeContent currentUser={currentUser}/>;
+            return <HomeContent currentUser={currentUser} />;
         case 'Take Quiz':
-            return <TakeQuizContent currentUser={currentUser}/>;
+            return <TakeQuizContent currentUser={currentUser} setActiveTab={setActiveTab} />;
         case 'Results':
-            return <ResultsContent currentUser={currentUser}/>;
+            return <ResultsContent currentUser={currentUser} />;
         case 'Settings':
-            return <SettingsContent currentUser={currentUser}/>;
+            return <SettingsContent currentUser={currentUser} />;
         default:
-            return <HomeContent currentUser={currentUser}/>;
+            return <HomeContent currentUser={currentUser} />;
     }
 }
 
-function HomeContent({
-                         currentUser
-                     }) {
+function HomeContent({ currentUser }) {
     return (
         <div className="content">
             <h2>Home</h2>
-            <p>Welcome to your dashboard, {currentUser?.username}! Here you can view your upcoming quizzes and past
-                results.</p>
+            <p>Welcome to your dashboard, {currentUser?.username}! Here you can view your upcoming quizzes and past results.</p>
         </div>
     );
 }
 
-function TakeQuizContent({ currentUser }) {
+function TakeQuizContent({ currentUser, setActiveTab }) {
     const [quizCode, setQuizCode] = useState('');
     const [quizData, setQuizData] = useState(null);
     const [error, setError] = useState('');
@@ -103,8 +90,6 @@ function TakeQuizContent({ currentUser }) {
     const [showQuizCodeInput, setShowQuizCodeInput] = useState(true);
     const [submissionResult, setSubmissionResult] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [hasAttempted, setHasAttempted] = useState(false);
-    const navigate = useNavigate();
 
     const handleQuizCodeSubmit = async (e) => {
         e.preventDefault();
@@ -118,10 +103,26 @@ function TakeQuizContent({ currentUser }) {
 
         setLoading(true);
         try {
+            const attemptCheckResponse = await fetch(`http://localhost:3000/api/check-quiz-attempt/${quizCode}/${currentUser.id}`);
+
+            if (!attemptCheckResponse.ok) {
+                throw new Error(`Failed to check quiz attempt: ${attemptCheckResponse.status}`);
+            }
+
+            const attemptCheckData = await attemptCheckResponse.json();
+
+            if (attemptCheckData.hasAttempted) {
+                setError(attemptCheckData.message);
+                setQuizData(null);
+                setShowQuizCodeInput(true);
+                setLoading(false);
+                return;
+            }
+
             const response = await fetch(`http://localhost:3000/api/quizzes/${quizCode}`);
-            console.log("Fetching quiz with code:", quizCode); // Debugging line
+
             if (!response.ok) {
-                console.error(`Fetch error: ${response.status} ${response.statusText}`); // More detailed error
+                console.error(`Fetch error: ${response.status} ${response.statusText}`);
                 if (response.status === 404) {
                     setError('Quiz not found with this code.');
                 } else {
@@ -130,10 +131,12 @@ function TakeQuizContent({ currentUser }) {
                 setQuizData(null);
                 return;
             }
+
             const data = await response.json();
-            console.log("Quiz data received:", data); // Debugging line
+            console.log("Quiz data received:", data);
             setQuizData(data);
             setShowQuizCodeInput(false);
+
         } catch (err) {
             console.error('Error fetching quiz:', err);
             setError('An error occurred while fetching the quiz.');
@@ -144,21 +147,19 @@ function TakeQuizContent({ currentUser }) {
     };
 
     const handleAnswerChange = (questionIndex, optionIndex) => {
-        const newSelectedAnswers = { ...selectedAnswers };
-
-        if (!newSelectedAnswers[questionIndex]) {
-            newSelectedAnswers[questionIndex] = [];
-        }
-
-        if (newSelectedAnswers[questionIndex].includes(optionIndex)) {
-            newSelectedAnswers[questionIndex] = newSelectedAnswers[questionIndex].filter(
-                (index) => index !== optionIndex
-            );
-        } else {
-            newSelectedAnswers[questionIndex].push(optionIndex);
-        }
-
-        setSelectedAnswers(newSelectedAnswers);
+        setSelectedAnswers(prev => {
+            const newAnswers = { ...prev };
+            if (!newAnswers[questionIndex]) {
+                newAnswers[questionIndex] = [];
+            }
+            const index = newAnswers[questionIndex].indexOf(optionIndex);
+            if (index > -1) {
+                newAnswers[questionIndex].splice(index, 1);
+            } else {
+                newAnswers[questionIndex].push(optionIndex);
+            }
+            return newAnswers;
+        });
     };
 
     const handleSubmitQuiz = async () => {
@@ -176,15 +177,15 @@ function TakeQuizContent({ currentUser }) {
                 }),
             });
 
-            const data = await response.json();
-
-            if (response.ok) {
-                console.log('Quiz submitted successfully:', data);
-                setSubmissionResult(data);
-            } else {
-                console.error('Failed to submit quiz:', data);
-                setError(data.message || 'Failed to submit quiz. Please try again.');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to submit quiz. Please try again.');
             }
+
+            const data = await response.json();
+            console.log('Quiz submitted successfully:', data);
+            setSubmissionResult(data);
+            // We're not changing the active tab here anymore
         } catch (error) {
             console.error('Error submitting quiz:', error);
             setError('An error occurred while submitting the quiz');
@@ -192,6 +193,23 @@ function TakeQuizContent({ currentUser }) {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (submissionResult) {
+            setActiveTab('Results');
+        }
+    }, [submissionResult, setActiveTab]);
+
+    if (submissionResult) {
+        return (
+            <ResultsContent
+                quizData={quizData}
+                results={submissionResult}
+                selectedAnswers={selectedAnswers}
+                currentUser={currentUser}
+            />
+        );
+    }
 
     const renderQuiz = () => {
         if (!quizData || !quizData.questions) {
@@ -208,20 +226,11 @@ function TakeQuizContent({ currentUser }) {
                             <div className="options-container">
                                 {question.options.map((option, optionIndex) => (
                                     <div key={optionIndex} className="option-item">
-                                        <label
-                                            className={
-                                                selectedAnswers[index]?.includes(optionIndex)
-                                                    ? 'selected'
-                                                    : ''
-                                            }
-                                        >
+                                        <label className={selectedAnswers[index]?.includes(optionIndex) ? 'selected' : ''}>
                                             <input
                                                 type="checkbox"
-                                                name={`question_${index}`}
-                                                value={optionIndex}
                                                 checked={selectedAnswers[index]?.includes(optionIndex)}
                                                 onChange={() => handleAnswerChange(index, optionIndex)}
-                                                disabled={hasAttempted}
                                             />
                                             <span className="option-text">{option.text}</span>
                                         </label>
@@ -231,14 +240,23 @@ function TakeQuizContent({ currentUser }) {
                         </div>
                     ))}
                 </div>
-                {!hasAttempted && (
-                    <button className="submit-quiz-btn" onClick={handleSubmitQuiz} disabled={loading}>
-                        {loading ? 'Submitting...' : 'Submit Quiz'}
-                    </button>
-                )}
+                <button className="submit-quiz-btn" onClick={handleSubmitQuiz} disabled={loading}>
+                    {loading ? 'Submitting...' : 'Submit Quiz'}
+                </button>
             </div>
         );
     };
+
+    if (submissionResult) {
+        return (
+            <ResultsContent
+                quizData={quizData}
+                results={submissionResult}
+                selectedAnswers={selectedAnswers}
+                currentUser={currentUser}
+            />
+        );
+    }
 
     return (
         <div className="content">
@@ -265,21 +283,12 @@ function TakeQuizContent({ currentUser }) {
                     </>
                 )}
                 {error && <p className="error-message">{error}</p>}
-                {submissionResult ? (
-                    <ResultsContent
-                        quizData={quizData}
-                        results={submissionResult}
-                        selectedAnswers={hasAttempted ? JSON.parse(submissionResult.answers) : selectedAnswers}
-                        hasAttempted={hasAttempted}
-                        currentUser={currentUser}
-                    />
-                ) : (
-                    quizData && renderQuiz()
-                )}
+                {quizData && renderQuiz()}
             </div>
         </div>
     );
 }
+
 
 function ResultsContent({ currentUser }) {
     const [quizCode, setQuizCode] = useState('');
@@ -291,7 +300,6 @@ function ResultsContent({ currentUser }) {
         e.preventDefault();
         setError('');
         setLoading(true);
-
         try {
             const response = await fetch(`http://localhost:3000/api/quiz-result/${quizCode}/${currentUser.id}`);
             if (!response.ok) {
