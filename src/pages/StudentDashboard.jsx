@@ -153,17 +153,18 @@ function TakeQuizContent({
 
     const handleAnswerChange = (questionIndex, optionIndex) => {
         setSelectedAnswers(prevAnswers => {
-            const newAnswers = {
-                ...prevAnswers
-            };
+            const newAnswers = { ...prevAnswers };
             if (newAnswers[questionIndex] === optionIndex) {
-                delete newAnswers[questionIndex]; // Deselect option
+                // If the same option is clicked again, remove the selection
+                delete newAnswers[questionIndex]; // Use delete to remove the property
             } else {
-                newAnswers[questionIndex] = optionIndex; //Select new option
+                // Otherwise, update or add the selected option
+                newAnswers[questionIndex] = optionIndex;
             }
             return newAnswers;
         });
     };
+
 
     const handleSubmitQuiz = async () => {
         setLoading(true);
@@ -349,23 +350,26 @@ function ResultsContent({ currentUser }) {
     return (
         <div className="content">
             <h2>Quiz Results</h2>
-            <form onSubmit={handleQuizCodeSubmit}>
-                <input
-                    type="text"
-                    placeholder="Enter Quiz Code to View Results"
-                    value={quizCode}
-                    onChange={(e) => setQuizCode(e.target.value)}
-                    className="quiz-code-input"
-                />
-                <button type="submit" className="view-results-btn" disabled={loading}>
-                    {loading ? 'Loading...' : 'View Results'}
-                </button>
-            </form>
+            <div className="results-form-container">
+                <form onSubmit={handleQuizCodeSubmit}>
+                    <input
+                        type="text"
+                        placeholder="Enter Quiz Code to View Results"
+                        value={quizCode}
+                        onChange={(e) => setQuizCode(e.target.value)}
+                        className="quiz-code-input"
+                    />
+                    <button type="submit" className="view-results-btn" disabled={loading}>
+                        {loading ? 'Loading...' : 'View Results'}
+                    </button>
+                </form>
+            </div>
             {error && <p className="error-message">{error}</p>}
             {renderQuizResult()}
         </div>
     );
 }
+
 
 
 function SettingsContent({

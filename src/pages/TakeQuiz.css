@@ -421,3 +421,14 @@
     background-color: rgba(231, 76, 60, 0.1);
     border: 1px solid rgba(231, 76, 60, 0.3);
 }
+
+.view-results-btn {
+    background-color: #4CAF50 !important;
+    color: white !important;
+    padding: 10px 20px !important;
+    border: none !important;
+    border-radius: 5px !important;
+    cursor: pointer !important;
+    font-size: 16px !important;
+    transition: background-color 0.3s !important;
+}
