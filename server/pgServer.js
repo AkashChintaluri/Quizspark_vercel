@@ -1,5 +1,6 @@
 import express from 'express';
 import pkg from 'pg';
+
 const {
     Pool
 } = pkg;
@@ -115,12 +116,12 @@ function startServer() {
         const { quiz_code, user_id, answers } = req.body;
 
         try {
-            // First, fetch the quiz details
+            // Fetch the quiz details
             const quizQuery = `
-                SELECT quiz_id, questions
-                FROM quizzes
-                WHERE quiz_code = $1;
-            `;
+            SELECT quiz_id, questions
+            FROM quizzes
+            WHERE quiz_code = $1;
+        `;
             const quizResult = await pool.query(quizQuery, [quiz_code]);
 
             if (quizResult.rows.length === 0) {
@@ -130,7 +131,6 @@ function startServer() {
             }
 
             const quiz = quizResult.rows[0];
-
             const questions = quiz.questions.questions;
 
             // Calculate score
@@ -138,23 +138,20 @@ function startServer() {
             let totalQuestions = questions.length;
 
             questions.forEach((question, index) => {
-                const correctAnswers = question.options
-                    .map((option, optionIndex) => option.is_correct ? optionIndex : -1)
-                    .filter(index => index !== -1);
+                const correctAnswer = question.options.findIndex(option => option.is_correct);
+                const userAnswer = answers[index];
 
-                const userAnswers = answers[index] || [];
-
-                if (JSON.stringify(correctAnswers.sort()) === JSON.stringify(userAnswers.sort())) {
+                if (correctAnswer === userAnswer) {
                     score++;
                 }
             });
 
             // Insert the attempt into the database
             const insertQuery = `
-                INSERT INTO quiz_attempts (quiz_id, user_id, score, total_questions, answers)
-                VALUES ($1, $2, $3, $4, $5)
-                RETURNING attempt_id;
-            `;
+            INSERT INTO quiz_attempts (quiz_id, user_id, score, total_questions, answers)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING attempt_id;
+        `;
             const insertValues = [quiz.quiz_id, user_id, score, totalQuestions, JSON.stringify(answers)];
             const insertResult = await pool.query(insertQuery, insertValues);
 
@@ -166,18 +163,16 @@ function startServer() {
                 score: score,
                 totalQuestions: totalQuestions,
                 question_results: questions.map((question, index) => {
-                    const correctAnswers = question.options
-                        .map((option, optionIndex) => option.is_correct ? optionIndex : -1)
-                        .filter(index => index !== -1);
-                    const userAnswers = answers[index] || [];
-                    const isCorrect = JSON.stringify(correctAnswers.sort()) === JSON.stringify(userAnswers.sort());
+                    const correctAnswer = question.options.findIndex(option => option.is_correct);
+                    const userAnswer = answers[index];
+                    const isCorrect = correctAnswer === userAnswer;
 
                     return {
                         question_index: index,
                         question_text: question.question_text,
                         is_correct: isCorrect,
-                        selected_options: userAnswers,
-                        correct_options: correctAnswers
+                        selected_option: userAnswer,
+                        correct_option: correctAnswer
                     };
                 })
             });
@@ -192,34 +187,71 @@ function startServer() {
         }
     });
 
+
     app.get('/api/quiz-result/:quiz_code/:user_id', async (req, res) => {
         const { quiz_code, user_id } = req.params;
 
         try {
             // Get the quiz details
             const quizQuery = `
-                SELECT q.quiz_id, q.quiz_name, q.questions, qa.score, qa.total_questions, qa.answers
+                SELECT q.quiz_id, q.quiz_name, q.questions
                 FROM quizzes q
-                LEFT JOIN quiz_attempts qa ON q.quiz_id = qa.quiz_id AND qa.user_id = $2
                 WHERE q.quiz_code = $1;
-        `;
-            const result = await pool.query(quizQuery, [quiz_code, user_id]);
+            `;
+            const quizResult = await pool.query(quizQuery, [quiz_code]);
 
-            if (result.rows.length === 0) {
+            if (quizResult.rows.length === 0) {
                 return res.status(404).json({ message: 'Quiz not found' });
             }
 
-            const quizData = result.rows[0];
-            const hasAttempted = quizData.score !== null;
+            const quizData = quizResult.rows[0];
 
-            res.json({
+            // Get the user's attempt
+            const attemptQuery = `
+                SELECT score, total_questions, answers
+                FROM quiz_attempts
+                WHERE quiz_id = $1 AND user_id = $2;
+            `;
+            const attemptResult = await pool.query(attemptQuery, [quizData.quiz_id, user_id]);
+
+            let attemptData = null;
+            if (attemptResult.rows.length > 0) {
+                attemptData = attemptResult.rows[0];
+            }
+
+            const questions = quizData.questions.questions;
+
+            let userAnswers = null;
+            if (attemptData) {
+                try {
+                    userAnswers = JSON.parse(attemptData.answers);
+                } catch (parseError) {
+                    console.error("Error parsing answers:", parseError);
+                    userAnswers = {}; // Provide a default value in case of error
+                }
+            }
+
+            const quizResults = {
                 quizName: quizData.quiz_name,
-                questions: quizData.questions.questions,
-                hasAttempted,
-                score: quizData.score,
-                totalQuestions: quizData.total_questions,
-                userAnswers: hasAttempted ? JSON.parse(quizData.answers) : null
-            });
+                score: attemptData ? attemptData.score : 0,
+                totalQuestions: attemptData ? attemptData.total_questions : questions.length,
+                questions: questions.map((question, index) => {
+                    const correctAnswers = question.options
+                        .map((option, optionIndex) => (option.is_correct ? optionIndex : -1))
+                        .filter(index => index !== -1);
+                    const selectedAnswers = userAnswers && userAnswers[index] ? userAnswers[index] : [];
+
+                    return {
+                        question_text: question.question_text,
+                        options: question.options.map((option, optionIndex) => ({
+                            ...option,
+                            isSelected: selectedAnswers.includes(optionIndex),
+                        })),
+                    };
+                }),
+                userAnswers: userAnswers || {} // Ensure this is always an object
+            };
+            res.json(quizResults);
         } catch (error) {
             console.error('Error fetching quiz result:', error);
             res.status(500).json({

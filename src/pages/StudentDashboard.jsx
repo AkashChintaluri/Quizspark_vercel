@@ -82,6 +82,7 @@ function HomeContent({ currentUser }) {
     );
 }
 
+
 function TakeQuizContent({ currentUser, setActiveTab }) {
     const [quizCode, setQuizCode] = useState('');
     const [quizData, setQuizData] = useState(null);
@@ -90,6 +91,7 @@ function TakeQuizContent({ currentUser, setActiveTab }) {
     const [showQuizCodeInput, setShowQuizCodeInput] = useState(true);
     const [submissionResult, setSubmissionResult] = useState(null);
     const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
     const handleQuizCodeSubmit = async (e) => {
         e.preventDefault();
@@ -147,18 +149,19 @@ function TakeQuizContent({ currentUser, setActiveTab }) {
     };
 
     const handleAnswerChange = (questionIndex, optionIndex) => {
-        setSelectedAnswers(prev => {
-            const newAnswers = { ...prev };
-            if (!newAnswers[questionIndex]) {
-                newAnswers[questionIndex] = [];
-            }
-            const index = newAnswers[questionIndex].indexOf(optionIndex);
-            if (index > -1) {
-                newAnswers[questionIndex].splice(index, 1);
+        setSelectedAnswers(prevAnswers => {
+            if (prevAnswers[questionIndex] === optionIndex) {
+                // If the same option is clicked again, remove the selection
+                const newAnswers = { ...prevAnswers };
+                delete newAnswers[questionIndex];
+                return newAnswers;
             } else {
-                newAnswers[questionIndex].push(optionIndex);
+                // Otherwise, update or add the selected option
+                return {
+                    ...prevAnswers,
+                    [questionIndex]: optionIndex,
+                };
             }
-            return newAnswers;
         });
     };
 
@@ -185,7 +188,7 @@ function TakeQuizContent({ currentUser, setActiveTab }) {
             const data = await response.json();
             console.log('Quiz submitted successfully:', data);
             setSubmissionResult(data);
-            // We're not changing the active tab here anymore
+            setActiveTab('Results'); // Update sidebar hover selection
         } catch (error) {
             console.error('Error submitting quiz:', error);
             setError('An error occurred while submitting the quiz');
@@ -193,23 +196,6 @@ function TakeQuizContent({ currentUser, setActiveTab }) {
             setLoading(false);
         }
     };
-
-    useEffect(() => {
-        if (submissionResult) {
-            setActiveTab('Results');
-        }
-    }, [submissionResult, setActiveTab]);
-
-    if (submissionResult) {
-        return (
-            <ResultsContent
-                quizData={quizData}
-                results={submissionResult}
-                selectedAnswers={selectedAnswers}
-                currentUser={currentUser}
-            />
-        );
-    }
 
     const renderQuiz = () => {
         if (!quizData || !quizData.questions) {
@@ -226,11 +212,14 @@ function TakeQuizContent({ currentUser, setActiveTab }) {
                             <div className="options-container">
                                 {question.options.map((option, optionIndex) => (
                                     <div key={optionIndex} className="option-item">
-                                        <label className={selectedAnswers[index]?.includes(optionIndex) ? 'selected' : ''}>
+                                        <label className={selectedAnswers[index] === optionIndex ? 'selected' : ''}>
                                             <input
-                                                type="checkbox"
-                                                checked={selectedAnswers[index]?.includes(optionIndex)}
-                                                onChange={() => handleAnswerChange(index, optionIndex)}
+                                                type="radio"
+                                                name={`question_${index}`} // Unique name for each group of radio buttons
+                                                value={optionIndex}
+                                                checked={selectedAnswers[index] === optionIndex}
+                                                onChange={() => handleAnswerChange(index, Number(optionIndex))}
+
                                             />
                                             <span className="option-text">{option.text}</span>
                                         </label>
@@ -319,40 +308,42 @@ function ResultsContent({ currentUser }) {
         if (!quizResult) return null;
 
         return (
-            <>
+            <div className="quiz-result">
                 <h3>{quizResult.quizName}</h3>
-                {quizResult.hasAttempted ? (
-                    <>
-                        <p>Score: {quizResult.score} / {quizResult.totalQuestions}</p>
-                        {quizResult.questions.map((question, index) => (
-                            <div key={index} className="question-card">
-                                <h4>Question {index + 1}</h4>
-                                <p>{question.question_text}</p>
-                                <div className="options-container">
-                                    {question.options.map((option, optionIndex) => {
-                                        const isSelected = quizResult.userAnswers[index]?.includes(optionIndex);
-                                        const isCorrect = option.is_correct;
-                                        let className = 'option-item';
-                                        if (isSelected) className += isCorrect ? ' correct' : ' incorrect';
-                                        else if (isCorrect) className += ' correct-answer';
+                <p className="final-score">Final Score: {quizResult.score} / {quizResult.totalQuestions}</p>
+                {quizResult.questions.map((question, questionIndex) => (
+                    <div key={questionIndex} className="question-card">
+                        <h4>Question {questionIndex + 1}</h4>
+                        <p>{question.question_text}</p>
+                        <div className="options-container">
+                            {question.options.map((option, optionIndex) => {
+                                const isSelected = quizResult.userAnswers[questionIndex] === optionIndex;
+                                const isCorrect = option.is_correct;
 
-                                        return (
-                                            <div key={optionIndex} className={className}>
-                                                <label>
-                                                    <input type="checkbox" checked={isSelected} disabled />
-                                                    <span>{option.text}</span>
-                                                </label>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        ))}
-                    </>
-                ) : (
-                    <p>You haven't attempted this quiz yet.</p>
-                )}
-            </>
+                                let className = 'option-item';
+                                if (isCorrect) {
+                                    className += ' correct';
+                                } else if (isSelected && !isCorrect) {
+                                    className += ' incorrect';
+                                }
+
+                                return (
+                                    <div key={optionIndex} className={className}>
+                                        <label>
+                                            <input
+                                                type="radio"
+                                                checked={isSelected}
+                                                disabled
+                                            />
+                                            <span>{option.text}</span>
+                                        </label>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ))}
+            </div>
         );
     };
 
@@ -376,6 +367,7 @@ function ResultsContent({ currentUser }) {
         </div>
     );
 }
+
 
 function SettingsContent({
                              currentUser
