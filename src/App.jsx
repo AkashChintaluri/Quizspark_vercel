@@ -7,7 +7,7 @@ import Home from './pages/Home';
 import StudentLogin from './pages/StudentLogin';
 import TeacherLogin from './pages/TeacherLogin';
 import SignupForm from './pages/SignupForm';
-import StudentDashboard from './pages/StudentDashboard';
+import StudentDashboard from './pages/StudentDashboard'; // Ensure this path matches your file structure
 import TeacherDashboard from './pages/TeacherDashboard';
 import Header from './components/Header';
 
@@ -29,7 +29,10 @@ function App() {
                         <Route path="/student-login" element={<Layout><StudentLogin /></Layout>} />
                         <Route path="/teacher-login" element={<Layout><TeacherLogin /></Layout>} />
                         <Route path="/signup" element={<Layout><SignupForm /></Layout>} />
-                        <Route path="/student-dashboard" element={<StudentDashboard />} />
+                        {/* Updated StudentDashboard route with nested results route */}
+                        <Route path="/student-dashboard" element={<StudentDashboard />}>
+                            <Route path="results/:quizCode" element={<StudentDashboard />} />
+                        </Route>
                         <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
                     </Routes>
                 </div>

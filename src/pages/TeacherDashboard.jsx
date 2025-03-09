@@ -84,15 +84,154 @@ function Content({
     }
 }
 
-function HomeContent({
-                         currentUser
-                     }) {
+function HomeContent({ currentUser, setActiveTab }) {
+    const [quizzes, setQuizzes] = useState([]);
+    const [filteredQuizzes, setFilteredQuizzes] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const fetchCreatedQuizzes = async () => {
+            if (!currentUser?.id) return;
+
+            setLoading(true);
+            setError('');
+            try {
+                const response = await axios.get(`http://localhost:3000/api/quizzes/created/${currentUser.id}`);
+                if (response.status === 200) {
+                    setQuizzes(response.data);
+                    setFilteredQuizzes(response.data);
+                } else {
+                    throw new Error('Failed to fetch quizzes');
+                }
+            } catch (err) {
+                console.error('Error fetching created quizzes:', err);
+                setError('Failed to load your quizzes. Please try again later.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCreatedQuizzes();
+    }, [currentUser]);
+
+    useEffect(() => {
+        const filtered = quizzes.filter(quiz =>
+            quiz.quiz_name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        setFilteredQuizzes(filtered);
+    }, [searchTerm, quizzes]);
+
+    const handleSearchChange = (e) => {
+        setSearchTerm(e.target.value);
+    };
+
+    const handleCreateQuiz = () => {
+        setActiveTab('Make Quizzes');
+    };
+
+    // Get stats
+    const totalQuizzes = quizzes.length;
+    const upcomingQuizzes = quizzes.filter(quiz => new Date(quiz.due_date) > new Date()).length;
+    const recentQuiz = quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+
     return (
         <div className="content">
-            <h2>Home</h2>
-            <p>Welcome to your dashboard, {currentUser
-                ?.username}! Here you can manage quizzes and view student
-                progress.</p>
+            <div className="dashboard-header">
+                <h1 className="dashboard-title">Your Quiz Dashboard</h1>
+                <button className="create-quiz-btn" onClick={handleCreateQuiz}>
+                    Create New Quiz
+                </button>
+            </div>
+
+            <div className="stats-section">
+                <div className="stat-card">
+                    <span className="stat-value">{totalQuizzes}</span>
+                    <span className="stat-label">Total Quizzes</span>
+                </div>
+                <div className="stat-card">
+                    <span className="stat-value">{upcomingQuizzes}</span>
+                    <span className="stat-label">Upcoming Due</span>
+                </div>
+                <div className="stat-card">
+                    <span className="stat-value">{quizzes.length > 0 ? 'Yes' : 'No'}</span>
+                    <span className="stat-label">Recent Activity</span>
+                </div>
+            </div>
+
+            {loading && (
+                <div className="loading-overlay">
+                    <div className="spinner"></div>
+                    <p>Loading your quizzes...</p>
+                </div>
+            )}
+            {error && (
+                <div className="error-message">
+                    <span className="error-icon">⚠️</span>
+                    {error}
+                </div>
+            )}
+
+            {!loading && !error && filteredQuizzes.length === 0 && (
+                <div className="empty-state">
+                    {searchTerm ? (
+                        <p>No quizzes match "<strong>{searchTerm}</strong>". Try a different term!</p>
+                    ) : (
+                        <p>You haven't created any quizzes yet. Start by clicking "Create New Quiz" above!</p>
+                    )}
+                </div>
+            )}
+
+            {!loading && filteredQuizzes.length > 0 && (
+                <>
+                    {recentQuiz && (
+                        <div className="latest-section">
+                            <h2 className="section-title">Latest Quiz</h2>
+                            <div className="latest-card">
+                                <h3 className="latest-title">{recentQuiz.quiz_name}</h3>
+                                <div className="quiz-details">
+                                    <p><span className="detail-label">Code:</span> {recentQuiz.quiz_code}</p>
+                                    <p><span className="detail-label">Questions:</span> {recentQuiz.questions.questions.length}</p>
+                                    <p><span className="detail-label">Due:</span> {new Date(recentQuiz.due_date).toLocaleDateString()}</p>
+                                    <p><span className="detail-label">Created:</span> {new Date(recentQuiz.created_at).toLocaleDateString()}</p>
+                                </div>
+                                <button className="view-details-btn">View Details</button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="search-section">
+                        <div className="search-wrapper">
+                            <span className="search-icon">🔍</span>
+                            <input
+                                type="text"
+                                value={searchTerm}
+                                onChange={handleSearchChange}
+                                placeholder="Search your quizzes..."
+                                className="search-input"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="quizzes-grid">
+                        {filteredQuizzes.map((quiz) => (
+                            <div key={quiz.quiz_id} className="quiz-card">
+                                <h3 className="quiz-title">{quiz.quiz_name}</h3>
+                                <div className="quiz-details">
+                                    <p><span className="detail-label">Code:</span> {quiz.quiz_code}</p>
+                                    <p><span className="detail-label">Questions:</span> {quiz.questions.questions.length}</p>
+                                    <p><span className="detail-label">Due:</span> {new Date(quiz.due_date).toLocaleDateString()}</p>
+                                </div>
+                                <button className="view-details-btn">View Details</button>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
+
+            <p className="welcome-text">Welcome, {currentUser?.username}! Manage your quizzes with ease.</p>
         </div>
     );
 }
