@@ -1,0 +1,257 @@
+/* TeacherList.css */
+.teacher-list {
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 20px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.teacher-list h3 {
+    font-size: 28px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 25px;
+    text-align: center;
+    letter-spacing: 0.5px;
+}
+
+.teacher-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.teacher-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 10px;
+    border: 1px solid #e0e0e0;
+    transition: all 0.3s ease;
+}
+
+.teacher-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    border-color: #3498db;
+}
+
+.teacher-info {
+    flex-grow: 1;
+}
+
+.teacher-info h4 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 500;
+    color: #34495e;
+}
+
+.teacher-info p {
+    margin: 6px 0 0;
+    font-size: 14px;
+    color: #95a5a6;
+}
+
+/* Teacher Actions */
+.teacher-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.status {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 12px;
+    text-transform: uppercase;
+}
+
+.status.subscribed {
+    background-color: #fef5f5;
+    color: #e74c3c;
+}
+
+/* Button Styles */
+.subscribe-btn,
+.subscribed-btn {
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.subscribe-btn {
+    background-color: #3498db;
+    color: #fff;
+}
+
+.subscribe-btn:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+}
+
+.subscribed-btn {
+    background-color: #e74c3c;
+    color: #fff;
+}
+
+.subscribed-btn:hover {
+    background-color: #c0392b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);
+}
+
+/* Loading and Error States */
+.loading {
+    text-align: center;
+    font-size: 18px;
+    color: #7f8c8d;
+    padding: 20px;
+    animation: pulse 1.5s infinite;
+}
+
+.error-message {
+    text-align: center;
+    font-size: 16px;
+    color: #e74c3c;
+    padding: 15px;
+    background-color: #fff6f6;
+    border-radius: 8px;
+    border: 1px solid #f5c6cb;
+}
+
+/* No Teachers State */
+.no-teachers {
+    text-align: center;
+    font-size: 16px;
+    color: #7f8c8d;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px dashed #bdc3c7;
+}
+
+/* Dropdown Section */
+.unsubscribed-section {
+    margin-top: 30px;
+}
+
+.dropdown-toggle {
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    background: #3498db;
+    color: #fff;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: block;
+    margin: 0 auto;
+    box-shadow: 0 2px 5px rgba(52, 152, 219, 0.3);
+}
+
+.dropdown-toggle:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(52, 152, 219, 0.5);
+}
+
+.dropdown-menu {
+    margin-top: 15px;
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #bdc3c7;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    border-color: #3498db;
+    background: #fff;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+    outline: none;
+}
+
+.teacher-dropdown-list {
+    list-style: none;
+    padding: 0;
+}
+
+.dropdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.dropdown-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-item span {
+    color: #34495e;
+    font-size: 16px;
+}
+
+/* Animation for Loading */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+    .teacher-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .teacher-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .teacher-actions {
+        margin-top: 15px;
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .subscribe-btn,
+    .subscribed-btn {
+        width: 100%;
+    }
+
+    .dropdown-menu {
+        padding: 15px;
+    }
+}

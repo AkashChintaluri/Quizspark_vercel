@@ -23,35 +23,158 @@ pool.query('SELECT NOW()')
     .then(res => {
         console.log('Connected to database');
         console.log('Current time:', res.rows[0].now);
-
-        // Start the server after successful connection
         startServer();
     })
     .catch(err => {
         console.error('Error connecting to the database', err);
-        process.exit(1); // Exit the process if connection fails
+        process.exit(1);
     });
 
 function startServer() {
-    app.post('/api/quizzes', async (req, res) => {
-        const {
-            quiz_name,
-            quiz_code,
-            created_by,
-            questions
-        } = req.body;
+    app.post('/signup', async (req, res) => {
+        const { username, email, password, userType } = req.body;
+        const table = userType === 'student' ? 'student_login' : 'teacher_login';
 
         try {
             const query = `
-                INSERT INTO quizzes (quiz_name, quiz_code, created_by, questions)
-                VALUES ($1, $2, $3, $4::jsonb)
+                INSERT INTO ${table} (username, email, password)
+                VALUES ($1, $2, $3)
+                RETURNING id
+            `;
+            const result = await pool.query(query, [username, email, password]);
+            res.status(201).json({
+                message: 'User registered successfully',
+                userId: result.rows[0].id
+            });
+        } catch (error) {
+            console.error('Signup error:', error);
+            res.status(500).json({ error: 'Registration failed' });
+        }
+    });
+
+    app.post('/login', async (req, res) => {
+        const { username, password, userType } = req.body;
+        const table = userType === 'student' ? 'student_login' : 'teacher_login';
+
+        try {
+            const query = `
+                SELECT id, username, email 
+                FROM ${table} 
+                WHERE username = $1 AND password = $2
+            `;
+            const result = await pool.query(query, [username, password]);
+
+            if (result.rows.length > 0) {
+                res.json({
+                    success: true,
+                    user: {
+                        ...result.rows[0],
+                        userType
+                    }
+                });
+            } else {
+                res.status(401).json({ success: false, message: 'Invalid credentials' });
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            res.status(500).json({ error: 'Login failed' });
+        }
+    });
+
+    app.post('/change-password', async (req, res) => {
+        const { username, currentPassword, newPassword, userType } = req.body;
+        const table = userType === 'student' ? 'student_login' : 'teacher_login';
+
+        try {
+            const verifyQuery = `
+                SELECT id FROM ${table} 
+                WHERE username = $1 AND password = $2
+            `;
+            const verifyResult = await pool.query(verifyQuery, [username, currentPassword]);
+
+            if (verifyResult.rows.length === 0) {
+                return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            }
+
+            const updateQuery = `
+                UPDATE ${table} 
+                SET password = $1 
+                WHERE username = $2
+            `;
+            await pool.query(updateQuery, [newPassword, username]);
+            res.json({ success: true, message: 'Password updated' });
+        } catch (error) {
+            console.error('Password change error:', error);
+            res.status(500).json({ success: false, error: 'Password update failed' });
+        }
+    });
+
+    app.get('/api/current-user/:userId/:userType', async (req, res) => {
+        const { userId, userType } = req.params;
+        const table = userType === 'student' ? 'student_login' : 'teacher_login';
+
+        try {
+            const query = `
+                SELECT id, username, email 
+                FROM ${table} 
+                WHERE id = $1
+            `;
+            const result = await pool.query(query, [userId]);
+
+            if (result.rows.length > 0) {
+                res.json({ ...result.rows[0], userType });
+            } else {
+                res.status(404).json({ message: 'User not found' });
+            }
+        } catch (error) {
+            console.error('Current user error:', error);
+            res.status(500).json({ error: 'Failed to fetch user' });
+        }
+    });
+
+    app.get('/api/subscriptions/:student_id', async (req, res) => {
+        const { student_id } = req.params;
+        try {
+            const studentIdInt = parseInt(student_id, 10);
+            if (isNaN(studentIdInt)) {
+                console.error(`Invalid student_id: ${student_id} is not a number`);
+                return res.status(400).json({ error: 'Invalid student_id: must be a number' });
+            }
+
+            const query = `
+                SELECT t.id AS id, t.username, t.email
+                FROM teacher_login t
+                INNER JOIN subscriptions s ON t.id = s.teacher_id
+                WHERE s.student_id = $1;
+            `;
+            console.log('Executing subscriptions query:', query, 'with student_id:', studentIdInt);
+            const result = await pool.query(query, [studentIdInt]);
+            console.log('Subscriptions query result:', result.rows);
+            res.json(result.rows);
+        } catch (error) {
+            console.error('Error fetching subscriptions:', {
+                message: error.message,
+                stack: error.stack,
+                code: error.code,
+                detail: error.detail
+            });
+            res.status(500).json({
+                error: 'Failed to fetch subscriptions',
+                details: error.message
+            });
+        }
+    });
+
+    app.post('/api/quizzes', async (req, res) => {
+        const { quiz_name, quiz_code, created_by, questions, due_date } = req.body;
+
+        try {
+            const query = `
+                INSERT INTO quizzes (quiz_name, quiz_code, created_by, questions, due_date)
+                VALUES ($1, $2, $3, $4::jsonb, $5)
                 RETURNING quiz_id;
             `;
-
-            const values = [quiz_name, quiz_code, created_by, JSON.stringify({
-                questions
-            })];
-
+            const values = [quiz_name, quiz_code, created_by, JSON.stringify({ questions }), due_date];
             const result = await pool.query(query, values);
             const quizId = result.rows[0].quiz_id;
 
@@ -60,22 +183,18 @@ function startServer() {
                 message: 'Quiz created successfully',
                 quizId: quizId
             });
-
         } catch (error) {
             console.error('Error creating quiz:', error);
             res.status(500).json({
                 message: 'Failed to create quiz',
                 error: error.message,
-                stack: error.stack // Helpful for debugging
+                stack: error.stack
             });
         }
     });
 
-    // New API endpoint for getting quizzes using quiz_code
     app.get('/api/quizzes/:quiz_code', async (req, res) => {
-        const {
-            quiz_code
-        } = req.params;
+        const { quiz_code } = req.params;
 
         try {
             const query = `
@@ -83,18 +202,13 @@ function startServer() {
                 FROM quizzes
                 WHERE quiz_code = $1;
             `;
-
             const values = [quiz_code];
-
-            console.log("Executing query:", query, "with values:", values); // Debugging
-
+            console.log("Executing query:", query, "with values:", values);
             const result = await pool.query(query, values);
 
             if (result.rows.length === 0) {
-                console.log(`Quiz with code ${quiz_code} not found`); // Debugging
-                return res.status(404).json({
-                    message: 'Quiz not found'
-                });
+                console.log(`Quiz with code ${quiz_code} not found`);
+                return res.status(404).json({ message: 'Quiz not found' });
             }
 
             const quiz = result.rows[0];
@@ -102,7 +216,6 @@ function startServer() {
                 quiz_name: quiz.quiz_name,
                 questions: quiz.questions
             });
-
         } catch (error) {
             console.error('Error fetching quiz:', error);
             res.status(500).json({
@@ -114,14 +227,9 @@ function startServer() {
     });
 
     app.post('/api/submit-quiz', async (req, res) => {
-        const {
-            quiz_code,
-            user_id,
-            answers
-        } = req.body;
+        const { quiz_code, user_id, answers } = req.body;
 
         try {
-            // First, fetch the quiz details
             const quizQuery = `
                 SELECT quiz_id, questions
                 FROM quizzes
@@ -130,27 +238,23 @@ function startServer() {
             const quizResult = await pool.query(quizQuery, [quiz_code]);
 
             if (quizResult.rows.length === 0) {
-                return res.status(404).json({
-                    message: 'Quiz not found'
-                });
+                return res.status(404).json({ message: 'Quiz not found' });
             }
 
             const quiz = quizResult.rows[0];
             const questions = quiz.questions.questions;
 
-            // Calculate score
             let score = 0;
             let totalQuestions = questions.length;
 
             questions.forEach((question, index) => {
                 const correctAnswerIndex = question.options.findIndex(option => option.is_correct);
-                const userAnswer = parseInt(answers[index]); // Parse the user's answer to an integer
+                const userAnswer = parseInt(answers[index]);
                 if (correctAnswerIndex === userAnswer) {
                     score++;
                 }
             });
 
-            // Insert the attempt into the database
             const insertQuery = `
                 INSERT INTO quiz_attempts (quiz_id, user_id, score, total_questions, answers)
                 VALUES ($1, $2, $3, $4, $5)
@@ -168,7 +272,7 @@ function startServer() {
                 totalQuestions: totalQuestions,
                 question_results: questions.map((question, index) => {
                     const correctAnswerIndex = question.options.findIndex(option => option.is_correct);
-                    const userAnswer = parseInt(answers[index]); // Parse the user's answer to an integer
+                    const userAnswer = parseInt(answers[index]);
                     const isCorrect = correctAnswerIndex === userAnswer;
 
                     return {
@@ -180,13 +284,12 @@ function startServer() {
                     };
                 })
             });
-
         } catch (error) {
             console.error('Error submitting quiz:', error);
             res.status(500).json({
                 message: 'Failed to submit quiz',
                 error: error.message,
-                stack: error.stack // Helpful for debugging
+                stack: error.stack
             });
         }
     });
@@ -195,14 +298,12 @@ function startServer() {
         const { quiz_code, user_id } = req.params;
 
         try {
-            // Get the quiz details
             const quizQuery = `
-        SELECT q.quiz_id, q.quiz_name, q.questions, qa.answers, qa.score, qa.total_questions
-        FROM quizzes q
-        LEFT JOIN quiz_attempts qa ON q.quiz_id = qa.quiz_id AND qa.user_id = $2
-        WHERE q.quiz_code = $1;
-    `;
-
+                SELECT q.quiz_id, q.quiz_name, q.questions, qa.answers, qa.score, qa.total_questions
+                FROM quizzes q
+                LEFT JOIN quiz_attempts qa ON q.quiz_id = qa.quiz_id AND qa.user_id = $2
+                WHERE q.quiz_code = $1;
+            `;
             const quizResult = await pool.query(quizQuery, [quiz_code, user_id]);
 
             if (quizResult.rows.length === 0) {
@@ -212,7 +313,6 @@ function startServer() {
             const quizData = quizResult.rows[0];
             const questions = quizData.questions.questions;
 
-            // Handle the case where answers might be a string or an object
             let userAnswers = {};
             if (quizData.answers) {
                 if (typeof quizData.answers === 'string') {
@@ -256,42 +356,29 @@ function startServer() {
         }
     });
 
-
-    // New endpoint to check if user has already attempted the quiz before starting
     app.get('/api/check-quiz-attempt/:quizCode/:userId', async (req, res) => {
-        const {
-            quizCode,
-            userId
-        } = req.params;
+        const { quizCode, userId } = req.params;
 
         try {
-            // First, get the quiz_id from the quiz_code
             const quizQuery = 'SELECT quiz_id FROM quizzes WHERE quiz_code = $1';
             const quizResult = await pool.query(quizQuery, [quizCode]);
 
             if (quizResult.rows.length === 0) {
-                return res.status(404).json({
-                    message: 'Quiz not found'
-                });
+                return res.status(404).json({ message: 'Quiz not found' });
             }
 
             const quizId = quizResult.rows[0].quiz_id;
 
-            // Now check for an existing attempt
             const attemptQuery = 'SELECT * FROM quiz_attempts WHERE quiz_id = $1 AND user_id = $2';
             const attemptResult = await pool.query(attemptQuery, [quizId, userId]);
 
             if (attemptResult.rows.length > 0) {
-                // An attempt exists
                 res.json({
                     hasAttempted: true,
                     message: 'You have already attempted this quiz.'
                 });
             } else {
-                // No attempt exists
-                res.json({
-                    hasAttempted: false
-                });
+                res.json({ hasAttempted: false });
             }
         } catch (error) {
             console.error('Error checking quiz attempt:', error);
@@ -299,6 +386,115 @@ function startServer() {
                 message: 'Error checking quiz attempt',
                 error: error.message
             });
+        }
+    });
+
+    app.get('/api/recent-results/:user_id', async (req, res) => {
+        const { user_id } = req.params;
+        try {
+            const query = `
+                SELECT q.quiz_name, qa.attempt_id, qa.score, qa.total_questions, qa.attempt_date
+                FROM quiz_attempts qa
+                JOIN quizzes q ON q.quiz_id = qa.quiz_id
+                WHERE qa.user_id = $1
+                ORDER BY qa.attempt_date DESC
+                LIMIT 5;
+            `;
+            const result = await pool.query(query, [user_id]);
+            res.json(result.rows);
+        } catch (error) {
+            console.error('Error fetching recent results:', error);
+            res.status(500).json({ message: 'Failed to fetch recent results' });
+        }
+    });
+
+    app.get('/api/user-stats/:user_id', async (req, res) => {
+        const { user_id } = req.params;
+        try {
+            const query = `
+                SELECT 
+                    COUNT(*) as total_attempts,
+                    COALESCE(AVG(CAST(score AS FLOAT) / total_questions * 100), 0) as average_score,
+                    COUNT(DISTINCT quiz_id) as completed_quizzes
+                FROM quiz_attempts
+                WHERE user_id = $1;
+            `;
+            const result = await pool.query(query, [user_id]);
+            res.json(result.rows[0]);
+        } catch (error) {
+            console.error('Error fetching user stats:', error);
+            res.status(500).json({ message: 'Failed to fetch user stats' });
+        }
+    });
+
+    app.get('/api/teachers', async (req, res) => {
+        try {
+            const result = await pool.query(`
+                SELECT id AS id, username, email 
+                FROM teacher_login
+            `);
+            res.json(result.rows);
+        } catch (error) {
+            console.error('Error fetching teachers:', error);
+            res.status(500).json({ error: 'Failed to fetch teachers' });
+        }
+    });
+
+    app.post('/api/subscribe', async (req, res) => {
+        const { student_id, teacher_id } = req.body;
+        try {
+            await pool.query(`
+                INSERT INTO subscriptions (student_id, teacher_id)
+                VALUES ($1, $2)
+                ON CONFLICT (student_id, teacher_id) DO NOTHING
+            `, [student_id, teacher_id]);
+            res.json({ success: true });
+        } catch (error) {
+            console.error('Subscription error:', error);
+            res.status(500).json({ error: 'Subscription failed' });
+        }
+    });
+
+    app.post('/api/unsubscribe', async (req, res) => {
+        const { student_id, teacher_id } = req.body;
+        try {
+            await pool.query(`
+                DELETE FROM subscriptions 
+                WHERE student_id = $1 AND teacher_id = $2
+            `, [student_id, teacher_id]);
+            res.json({ success: true });
+        } catch (error) {
+            console.error('Unsubscription error:', error);
+            res.status(500).json({ error: 'Unsubscription failed' });
+        }
+    });
+
+    app.get('/api/upcoming-quizzes/:student_id', async (req, res) => {
+        const { student_id } = req.params;
+        try {
+            const query = `
+                SELECT q.*, t.username AS teacher_name
+                FROM quizzes q
+                JOIN teacher_login t ON q.created_by = t.id
+                WHERE q.created_by IN (
+                    SELECT teacher_id 
+                    FROM subscriptions 
+                    WHERE student_id = $1
+                )
+                AND q.due_date > NOW()
+                AND NOT EXISTS (
+                    SELECT 1 
+                    FROM quiz_attempts 
+                    WHERE quiz_id = q.quiz_id 
+                    AND user_id = $1
+                )
+                ORDER BY q.due_date ASC
+            `;
+            const result = await pool.query(query, [student_id]);
+            res.json(result.rows);
+        } catch (error) {
+            console.error('Error fetching quizzes:', error);
+            res.status(500).json({ error: 'Failed to fetch quizzes' });
         }
     });
 

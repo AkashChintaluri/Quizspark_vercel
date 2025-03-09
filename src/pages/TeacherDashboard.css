@@ -17,8 +17,8 @@ body,
 }
 
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
+    font-family: 'Roboto', Arial, sans-serif;
+    background-color: #f5f7fa;
 }
 
 /* Dashboard Layout */
@@ -26,30 +26,32 @@ body {
     display: flex;
     min-height: 100vh;
     width: 100%;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
 }
 
 .sidebar {
-    width: 250px;
-    background-color: #2c3e50;
-    color: white;
-    padding: 20px;
+    width: 260px;
+    background: linear-gradient(to bottom, #2c3e50, #34495e);
+    color: #ecf0f1;
+    padding: 30px 20px;
     flex-shrink: 0;
-    height: 100vh; /* Ensures the sidebar takes full height */
-    display: flex;
-    flex-direction: column; /*  Allows for better content distribution */
-    position: fixed; /* Keeps the sidebar static */
+    height: 100vh;
+    position: fixed;
     top: 0;
     left: 0;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
 }
 
 .sidebar h2 {
-    margin-bottom: 30px;
-    font-size: 1.5em;
+    margin-bottom: 40px;
+    font-size: 1.8em;
+    font-weight: 600;
     text-align: center;
+    letter-spacing: 1px;
 }
 
 .sidebar nav {
-    flex-grow: 1; /* Allows nav to take up remaining space */
+    flex-grow: 1;
 }
 
 .sidebar nav ul {
@@ -58,119 +60,328 @@ body {
 }
 
 .sidebar nav ul li {
-    margin-bottom: 10px;
+    margin-bottom: 15px;
 }
 
 .sidebar nav ul li button {
     width: 100%;
-    padding: 10px;
+    padding: 12px 15px;
     text-align: left;
-    background-color: transparent;
+    background: transparent;
     border: none;
-    color: white;
+    color: #ecf0f1;
     cursor: pointer;
-    transition: background-color 0.3s;
+    font-size: 16px;
+    font-weight: 500;
+    border-radius: 6px;
+    transition: all 0.3s ease;
 }
 
 .sidebar nav ul li button:hover,
 .sidebar nav ul li button.active {
-    background-color: #34495e;
+    background: #3498db;
+    transform: translateX(5px);
 }
 
 .content {
-    margin-left: 250px; /* Shifts content to the right of the sidebar */
-    padding: 30px;
-    background-color: #ecf0f1;
-    overflow-y: auto; /* Enables vertical scrolling for content */
-    overflow-x: hidden; /* Prevents horizontal scrolling */
-    height: 100vh; /* Make content take full height */
+    margin-left: 260px;
+    padding: 40px;
+    background: #fff;
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 100vh;
+    width: calc(100% - 260px);
+    border-radius: 12px 0 0 12px;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
 }
 
 .content h2 {
-    margin-bottom: 20px;
+    margin-bottom: 25px;
     color: #2c3e50;
+    font-size: 28px;
+    font-weight: 600;
 }
 
-/* New styles for settings */
-.settings-options {
+/* Make Quizzes Styles */
+.make-quizzes {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.quiz-details-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.quiz-name-input,
+.due-date-input,
+.question-input {
+    padding: 14px;
+    border: 1px solid #bdc3c7;
+    border-radius: 8px;
+    font-size: 16px;
+    width: 100%;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.quiz-name-input:focus,
+.due-date-input:focus,
+.question-input:focus {
+    border-color: #3498db;
+    background: #fff;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+    outline: none;
+}
+
+.options-section {
     display: flex;
     flex-direction: column;
     gap: 15px;
+    margin-top: 15px;
+}
+
+.option-input {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.option-input input[type="text"] {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #bdc3c7;
+    border-radius: 8px;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.option-input input[type="text"]:focus {
+    border-color: #3498db;
+    background: #fff;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+}
+
+.option-input label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #34495e;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.add-question-btn,
+.submit-quiz-btn {
+    padding: 12px 25px;
+    background: #2ecc71;
+    color: #fff;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(46, 204, 113, 0.3);
+}
+
+.add-question-btn:hover,
+.submit-quiz-btn:hover {
+    background: #27ae60;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(46, 204, 113, 0.5);
+}
+
+.questions-list {
+    margin-top: 25px;
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.questions-list h3 {
+    color: #2c3e50;
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 20px;
+}
+
+.questions-list ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.questions-list li {
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    color: #34495e;
+    transition: all 0.3s ease;
+}
+
+.questions-list li:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.quiz-code-section {
+    margin-top: 25px;
+    padding: 20px;
+    background: #e8f5e9;
+    border-radius: 8px;
+    color: #27ae60;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* Settings Styles */
+.settings-options {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .settings-button {
-    padding: 10px 20px;
+    padding: 12px 25px;
     font-size: 16px;
     cursor: pointer;
     border: none;
-    border-radius: 5px;
-    transition: background-color 0.3s;
+    border-radius: 25px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .logout {
-    background-color: #e74c3c;
-    color: white;
+    background: #e74c3c;
+    color: #fff;
 }
 
 .logout:hover {
-    background-color: #c0392b;
+    background: #c0392b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);
 }
 
 .change-password {
-    background-color: #3498db;
-    color: white;
+    background: #3498db;
+    color: #fff;
 }
 
 .change-password:hover {
-    background-color: #2980b9;
+    background: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
 }
 
 .password-change-fields {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-top: 15px;
+    gap: 15px;
+    margin-top: 20px;
 }
 
 .password-change-fields input {
-    padding: 10px;
+    padding: 14px;
     font-size: 16px;
     border: 1px solid #bdc3c7;
-    border-radius: 5px;
+    border-radius: 8px;
+    background: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.password-change-fields input:focus {
+    border-color: #3498db;
+    background: #fff;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+    outline: none;
 }
 
 .password-change-fields button {
-    padding: 10px 20px;
+    padding: 12px 25px;
     font-size: 16px;
     cursor: pointer;
     border: none;
-    border-radius: 5px;
-    background-color: #2ecc71;
-    color: white;
-    transition: background-color 0.3s;
+    border-radius: 25px;
+    background: #2ecc71;
+    color: #fff;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(46, 204, 113, 0.3);
 }
 
 .password-change-fields button:hover {
-    background-color: #27ae60;
+    background: #27ae60;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(46, 204, 113, 0.5);
 }
 
 .message {
-    margin-top: 15px;
-    padding: 10px;
-    border-radius: 5px;
-    background-color: #e8f0fe;
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 8px;
+    background: #e8f0fe;
     color: #2c3e50;
+    font-size: 14px;
 }
 
 .welcome-box {
-    background-color: #bbdefb; /* Light Blue */
-    color: #1976d2; /* Darker Blue */
-    padding: 10px;
-    margin-bottom: 20px;
-    margin-top: 0px;
-    border-radius: 5px;
+    background: linear-gradient(90deg, #3498db 0%, #2980b9 100%);
+    color: #fff;
+    padding: 15px;
+    margin-bottom: 30px;
+    border-radius: 8px;
     text-align: center;
-    font-size: 0.9em;
-    /* Add a gradient */
-    background: linear-gradient(to bottom, #bbdefb, #90caf9);
+    font-size: 1em;
+    box-shadow: 0 2px 5px rgba(52, 152, 219, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 220px;
+    }
+
+    .content {
+        margin-left: 220px;
+        width: calc(100% - 220px);
+        padding: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .teacher-dashboard {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        padding: 20px;
+    }
+
+    .content {
+        margin-left: 0;
+        width: 100%;
+        padding: 15px;
+    }
+
+    .quiz-details-section {
+        gap: 15px;
+    }
+
+    .option-input {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .add-question-btn,
+    .submit-quiz-btn {
+        width: 100%;
+    }
 }

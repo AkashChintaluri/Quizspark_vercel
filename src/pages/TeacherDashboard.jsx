@@ -5,6 +5,7 @@ import React, {
 import {
     useNavigate
 } from 'react-router-dom';
+import axios from 'axios'; // Import axios
 import './TeacherDashboard.css';
 import './MakeQuizzes.css';
 
@@ -13,7 +14,6 @@ function TeacherDashboard() {
     const [currentUser, setCurrentUser] = useState(null);
     const navigate = useNavigate();
 
-    // Fetch the current logged-in user
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
         if (!storedUser) {
@@ -90,7 +90,8 @@ function HomeContent({
     return (
         <div className="content">
             <h2>Home</h2>
-            <p>Welcome to your dashboard, {currentUser?.username}! Here you can manage quizzes and view student
+            <p>Welcome to your dashboard, {currentUser
+                ?.username}! Here you can manage quizzes and view student
                 progress.</p>
         </div>
     );
@@ -101,43 +102,39 @@ function MakeQuizzesContent({
                             }) {
     const [quizName, setQuizName] = useState('');
     const [quizCode, setQuizCode] = useState('');
+    const [dueDate, setDueDate] = useState(''); // New state for due date
     const [questions, setQuestions] = useState([]);
     const [currentQuestion, setCurrentQuestion] = useState('');
     const [options, setOptions] = useState(['', '', '', '']);
-    const [correctOptions, setCorrectOptions] = useState([]); // Allow multiple correct options
+    const [correctOptions, setCorrectOptions] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
-    // Function to generate a random alphanumeric code for the quiz
     const generateQuizCode = () => {
-        return Math.random().toString(36).substring(2, 8).toUpperCase(); // Generates a 6-character code
+        return Math.random().toString(36).substring(2, 8).toUpperCase();
     };
 
-    // Handle changes in option input fields
     const handleOptionChange = (index, value) => {
         const newOptions = [...options];
         newOptions[index] = value;
         setOptions(newOptions);
     };
 
-    // Handle toggling of multiple correct options
     const handleCorrectOptionToggle = (index) => {
         if (correctOptions.includes(index)) {
-            // Remove the option if it's already in the list
             setCorrectOptions(correctOptions.filter((opt) => opt !== index));
         } else {
-            // Add the option to the list
             setCorrectOptions([...correctOptions, index]);
         }
     };
 
-    // Add a new question to the list of questions
     const handleAddQuestion = () => {
         if (currentQuestion && options.every((option) => option.trim() !== '') && correctOptions.length > 0) {
             const newQuestion = {
                 question_text: currentQuestion,
                 options: options.map((option, index) => ({
                     text: option,
-                    is_correct: correctOptions.includes(index), // Check if this option is in the correct options list
+                    is_correct: correctOptions.includes(index),
                 })),
             };
             setQuestions([...questions, newQuestion]);
@@ -147,60 +144,64 @@ function MakeQuizzesContent({
         }
     };
 
-    // Reset the form for adding a new question
     const resetForm = () => {
         setCurrentQuestion('');
         setOptions(['', '', '', '']);
         setCorrectOptions([]);
     };
 
-    // Submit the quiz to the backend
     const handleSubmitQuiz = async () => {
         if (!quizName.trim()) {
             alert('Please enter a name for the quiz.');
             return;
         }
-
+        if (!dueDate) {
+            alert('Please set a due date for the quiz.');
+            return;
+        }
         if (questions.length === 0) {
             alert('Please add at least one question to the quiz.');
             return;
         }
-
         if (!currentUser) {
             alert('You must be logged in to create a quiz.');
             return;
         }
 
+        setIsLoading(true); // Start loading
         const generatedCode = generateQuizCode();
         setQuizCode(generatedCode);
 
         const quizData = {
             quiz_name: quizName,
             quiz_code: generatedCode,
-            created_by: currentUser.username,
-            questions: questions // JSON structure for questions
+            created_by: currentUser.id, // Changed to use ID instead of username
+            questions: questions,
+            due_date: dueDate // Add due_date to the payload
         };
 
         try {
-            const response = await fetch('http://localhost:3000/api/quizzes', {
-                method: 'POST',
+            const response = await axios.post('http://localhost:3000/api/quizzes', quizData, {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(quizData),
             });
 
-            if (response.ok) {
+            if (response.status === 201) {
                 alert(`Quiz created successfully! Quiz Code: ${generatedCode}`);
                 setQuizName('');
+                setDueDate(''); // Reset due date
                 setQuestions([]);
                 resetForm();
             } else {
-                alert('Failed to create quiz. Please try again.');
+                const errorData = response.data;
+                alert(`Failed to create quiz: ${errorData.message || 'Unknown error'}`);
             }
         } catch (error) {
             console.error('Error submitting quiz:', error);
             alert('An error occurred while creating the quiz.');
+        } finally {
+            setIsLoading(false); // End loading
         }
     };
 
@@ -208,18 +209,25 @@ function MakeQuizzesContent({
         <div className="content make-quizzes">
             <h2>Make Quizzes</h2>
 
-            {/* Input field for Quiz Name */}
-            <div className="quiz-name-section">
+            <div className="quiz-details-section">
                 <input
                     type="text"
                     value={quizName}
                     onChange={(e) => setQuizName(e.target.value)}
                     placeholder="Enter Quiz Name"
                     className="quiz-name-input"
+                    disabled={isLoading} // Disable input when loading
+                />
+                <input
+                    type="datetime-local"
+                    value={dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    className="due-date-input"
+                    min={new Date().toISOString().slice(0, 16)} // Prevents past dates
+                    disabled={isLoading} // Disable input when loading
                 />
             </div>
 
-            {/* Form for adding a question */}
             <div className="question-form">
                 <input
                     type="text"
@@ -227,6 +235,7 @@ function MakeQuizzesContent({
                     onChange={(e) => setCurrentQuestion(e.target.value)}
                     placeholder="Enter your question"
                     className="question-input"
+                    disabled={isLoading} // Disable input when loading
                 />
                 <div className="options-section">
                     {options.map((option, index) => (
@@ -236,22 +245,25 @@ function MakeQuizzesContent({
                                 value={option}
                                 onChange={(e) => handleOptionChange(index, e.target.value)}
                                 placeholder={`Option ${index + 1}`}
+                                disabled={isLoading} // Disable input when loading
                             />
                             <label>
                                 <input
-                                    type="checkbox" // Allow multiple correct answers with checkboxes
+                                    type="checkbox"
                                     checked={correctOptions.includes(index)}
                                     onChange={() => handleCorrectOptionToggle(index)}
+                                    disabled={isLoading} // Disable input when loading
                                 />
                                 Correct
                             </label>
                         </div>
                     ))}
                 </div>
-                <button onClick={handleAddQuestion} className="add-question-btn">Add Question</button>
+                <button onClick={handleAddQuestion} className="add-question-btn" disabled={isLoading}>
+                    {isLoading ? 'Adding...' : 'Add Question'}
+                </button>
             </div>
 
-            {/* List of added questions */}
             <div className="questions-list">
                 <h3>Added Questions:</h3>
                 <ul>
@@ -261,12 +273,12 @@ function MakeQuizzesContent({
                 </ul>
             </div>
 
-            {/* Submit button */}
             {questions.length > 0 && (
-                <button onClick={handleSubmitQuiz} className="submit-quiz-btn">Done - Submit Quiz</button>
+                <button onClick={handleSubmitQuiz} className="submit-quiz-btn" disabled={isLoading}>
+                    {isLoading ? 'Submitting...' : 'Done - Submit Quiz'}
+                </button>
             )}
 
-            {/* Display Quiz Code after submission */}
             {quizCode && (
                 <div className="quiz-code-section">
                     <p><strong>Quiz Code:</strong> {quizCode}</p>
@@ -279,10 +291,62 @@ function MakeQuizzesContent({
 function ResultsContent({
                             currentUser
                         }) {
+    const [results, setResults] = useState([]);
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchResults = async () => {
+            setLoading(true);
+            setError('');
+            try {
+                const response = await axios.get(`http://localhost:3000/api/teacher-results/${currentUser.id}`);
+                if (response.status !== 200) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                setResults(response.data);
+            } catch (e) {
+                console.error("Could not fetch results:", e);
+                setError("Failed to load results.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchResults();
+    }, [currentUser.id]);
+
     return (
         <div className="content">
             <h2>Results</h2>
-            <p>View and manage your students' information and progress.</p>
+
+            {loading && <p>Loading results...</p>}
+            {error && <p className="error-message">{error}</p>}
+
+            {results.length > 0 ? (
+                <table className="results-table">
+                    <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Quiz</th>
+                        <th>Score</th>
+                        <th>Date</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {results.map(result => (
+                        <tr key={result.attempt_id}>
+                            <td>{result.student_username}</td>
+                            <td>{result.quiz_name}</td>
+                            <td>{result.score} / {result.total_questions}</td>
+                            <td>{new Date(result.attempt_date).toLocaleDateString()}</td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+            ) : (!loading && !error) ? (
+                <p>No results found.</p>
+            ) : null}
         </div>
     );
 }
@@ -292,10 +356,12 @@ function SettingsContent({
                          }) {
     const navigate = useNavigate();
     const [showPasswordFields, setShowPasswordFields] = useState(false);
-    const [username, setUsername] = useState('');
-    const [currentPassword, setCurrentPassword] = useState('');
-    const [newPassword, setNewPassword] = useState('');
+    const [formData, setFormData] = useState({
+        currentPassword: '',
+        newPassword: ''
+    });
     const [message, setMessage] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleLogout = () => {
         localStorage.removeItem('user');
@@ -303,37 +369,43 @@ function SettingsContent({
     };
 
     const handlePasswordChange = async () => {
+        setIsLoading(true);
+        setMessage('');
         try {
-            const response = await fetch('http://localhost:5000/change-password', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    username,
-                    currentPassword,
-                    newPassword,
-                    userType: 'teacher' // Explicitly set for teacher dashboard
-                }),
+            const response = await axios.post('http://localhost:3000/change-password', {
+                ...formData,
+                username: currentUser.username,
+                userType: 'teacher'
             });
 
-            const data = await response.json();
-
-            if (response.ok) {
+            if (response.status === 200) {
                 setMessage('Password changed successfully');
-                setUsername('');
-                setCurrentPassword('');
-                setNewPassword('');
+                setFormData({
+                    currentPassword: '',
+                    newPassword: ''
+                });
                 setShowPasswordFields(false);
             } else {
-                setMessage(data.message || 'Failed to change password');
+                setMessage(response.data.message || 'Failed to change password');
             }
         } catch (error) {
             console.error('Error changing password:', error);
             setMessage('An error occurred while changing the password');
+        } finally {
+            setIsLoading(false);
         }
     };
 
+    const handleInputChange = (e) => {
+        const {
+            name,
+            value
+        } = e.target;
+        setFormData(prevState => ({
+            ...prevState,
+            [name]: value
+        }));
+    };
 
     return (
         <div className="content">
@@ -351,24 +423,24 @@ function SettingsContent({
                 {showPasswordFields && (
                     <div className="password-change-fields">
                         <input
-                            type="text"
-                            placeholder="Username"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                        />
-                        <input
                             type="password"
+                            name="currentPassword"
                             placeholder="Current Password"
-                            value={currentPassword}
-                            onChange={(e) => setCurrentPassword(e.target.value)}
+                            value={formData.currentPassword}
+                            onChange={handleInputChange}
+                            disabled={isLoading}
                         />
                         <input
                             type="password"
+                            name="newPassword"
                             placeholder="New Password"
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
+                            value={formData.newPassword}
+                            onChange={handleInputChange}
+                            disabled={isLoading}
                         />
-                        <button onClick={handlePasswordChange}>Submit</button>
+                        <button onClick={handlePasswordChange} disabled={isLoading}>
+                            {isLoading ? 'Changing...' : 'Submit'}
+                        </button>
                     </div>
                 )}
                 {message && <p className="message">{message}</p>}
@@ -376,6 +448,5 @@ function SettingsContent({
         </div>
     );
 }
-
 
 export default TeacherDashboard;

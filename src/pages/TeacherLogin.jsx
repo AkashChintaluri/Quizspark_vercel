@@ -1,45 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './Login.css';
 
 function TeacherLogin() {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
+    const [formData, setFormData] = useState({ username: '', password: '' });
     const [isPressed, setIsPressed] = useState(false);
     const [showPopup, setShowPopup] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
     const navigate = useNavigate();
 
-    const buttonStyle = {
-        transform: isPressed ? 'scale(0.95)' : 'scale(1)',
-        transition: 'transform 0.1s',
-    };
-
-    const handleMouseDown = () => setIsPressed(true);
-    const handleMouseUp = () => setIsPressed(false);
+    useEffect(() => {
+        if (showPopup) {
+            const timer = setTimeout(() => {
+                setShowPopup(false);
+                navigate('/teacher-dashboard');
+            }, 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [showPopup, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsLoading(true);
+        setErrorMessage('');
+
         try {
-            const response = await axios.post('http://localhost:5000/login', {
-                username,
-                password,
+            const response = await axios.post('http://localhost:3000/login', {
+                ...formData,
                 userType: 'teacher'
             });
 
             if (response.data.success) {
                 localStorage.setItem('user', JSON.stringify(response.data.user));
                 setShowPopup(true);
-                setTimeout(() => {
-                    setShowPopup(false);
-                    navigate('/teacher-dashboard');
-                }, 2000);
             } else {
-                alert('Login failed. Please check your credentials.');
+                setErrorMessage('Invalid username or password');
             }
         } catch (error) {
-            console.error('Login error:', error.response?.data || error.message);
-            alert(`An error occurred during login: ${error.response?.data?.error || error.message}`);
+            const serverError = error.response?.data?.error || error.message;
+            setErrorMessage(serverError || 'Login failed. Please try again.');
+            console.error('Login error:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -53,9 +57,11 @@ function TeacherLogin() {
                         <input
                             type="text"
                             id="username"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
+                            value={formData.username}
+                            onChange={(e) => setFormData({...formData, username: e.target.value})}
                             required
+                            autoComplete="username"
+                            disabled={isLoading}
                         />
                     </div>
                     <div className="form-group">
@@ -63,26 +69,37 @@ function TeacherLogin() {
                         <input
                             type="password"
                             id="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            value={formData.password}
+                            onChange={(e) => setFormData({...formData, password: e.target.value})}
                             required
+                            autoComplete="current-password"
+                            disabled={isLoading}
                         />
                     </div>
+
+                    {errorMessage && <div className="error-message">{errorMessage}</div>}
+
                     <button
                         type="submit"
                         className="login-button"
-                        style={buttonStyle}
-                        onMouseDown={handleMouseDown}
-                        onMouseUp={handleMouseUp}
-                        onMouseLeave={handleMouseUp}
+                        style={{
+                            transform: isPressed ? 'scale(0.95)' : 'scale(1)',
+                            transition: 'transform 0.1s',
+                            opacity: isLoading ? 0.7 : 1
+                        }}
+                        onMouseDown={() => setIsPressed(true)}
+                        onMouseUp={() => setIsPressed(false)}
+                        onMouseLeave={() => setIsPressed(false)}
+                        disabled={isLoading}
                     >
-                        Login
+                        {isLoading ? 'Logging In...' : 'Login'}
                     </button>
                 </form>
             </div>
+
             {showPopup && (
-                <div className="popup">
-                    Login successful! Redirecting to dashboard...
+                <div className="popup success">
+                    ✔️ Login successful! Redirecting to dashboard...
                 </div>
             )}
         </div>
