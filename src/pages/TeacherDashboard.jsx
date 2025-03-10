@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom'; // Added useLocation
 import axios from 'axios';
 import './TeacherDashboard.css';
 import './MakeQuizzes.css';
@@ -12,6 +12,7 @@ function TeacherDashboard() {
     const [activeTab, setActiveTab] = useState('home');
     const [currentUser, setCurrentUser] = useState(null);
     const navigate = useNavigate();
+    const location = useLocation(); // Added to access navigation state
 
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
@@ -20,12 +21,17 @@ function TeacherDashboard() {
         } else {
             setCurrentUser(JSON.parse(storedUser));
         }
-    }, [navigate]);
+
+        // Switch to results tab if navigated with a quiz code
+        if (location.state?.quizCode) {
+            setActiveTab('results');
+        }
+    }, [navigate, location]);
 
     return (
         <div className="teacher-dashboard">
             <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} currentUser={currentUser} />
-            <Content activeTab={activeTab} currentUser={currentUser} setActiveTab={setActiveTab} />
+            <Content activeTab={activeTab} currentUser={currentUser} setActiveTab={setActiveTab} location={location} />
         </div>
     );
 }
@@ -58,14 +64,14 @@ function Sidebar({ activeTab, setActiveTab, currentUser }) {
     );
 }
 
-function Content({ activeTab, currentUser, setActiveTab }) {
+function Content({ activeTab, currentUser, setActiveTab, location }) {
     switch (activeTab) {
         case 'home':
             return <HomeContent currentUser={currentUser} setActiveTab={setActiveTab} />;
         case 'make quizzes':
             return <MakeQuizzesContent currentUser={currentUser} />;
         case 'results':
-            return <ResultsContent currentUser={currentUser} />;
+            return <ResultsContent currentUser={currentUser} initialQuizCode={location.state?.quizCode} />;
         case 'settings':
             return <SettingsContent currentUser={currentUser} />;
         default:
@@ -199,6 +205,11 @@ function HomeContent({ currentUser, setActiveTab }) {
         setMessage('');
     };
 
+    const handleQuizClick = (quizCode) => {
+        setActiveTab('results');
+        navigate('.', { state: { quizCode } });
+    };
+
     // Get stats
     const totalQuizzes = quizzes.length;
     const upcomingQuizzes = quizzes.filter(quiz => new Date(quiz.due_date) > new Date()).length;
@@ -256,7 +267,10 @@ function HomeContent({ currentUser, setActiveTab }) {
                     {recentQuiz && (
                         <div className="latest-section">
                             <h2 className="section-title">Latest Quiz</h2>
-                            <div className="latest-card">
+                            <div
+                                className="latest-card clickable"
+                                onClick={() => handleQuizClick(recentQuiz.quiz_code)}
+                            >
                                 <h3 className="latest-title">{recentQuiz.quiz_name}</h3>
                                 <div className="quiz-details">
                                     <p><span className="detail-label">Code:</span> {recentQuiz.quiz_code}</p>
@@ -264,7 +278,7 @@ function HomeContent({ currentUser, setActiveTab }) {
                                     <p><span className="detail-label">Due:</span> {new Date(recentQuiz.due_date).toLocaleDateString()}</p>
                                     <p><span className="detail-label">Created:</span> {new Date(recentQuiz.created_at).toLocaleDateString()}</p>
                                 </div>
-                                <button className="view-details-btn" onClick={() => handleViewDetails(recentQuiz)}>
+                                <button className="view-details-btn" onClick={(e) => { e.stopPropagation(); handleViewDetails(recentQuiz); }}>
                                     View Details
                                 </button>
                             </div>
@@ -286,14 +300,18 @@ function HomeContent({ currentUser, setActiveTab }) {
 
                     <div className="quizzes-grid">
                         {filteredQuizzes.map((quiz) => (
-                            <div key={quiz.quiz_id} className="quiz-card">
+                            <div
+                                key={quiz.quiz_id}
+                                className="quiz-card clickable"
+                                onClick={() => handleQuizClick(quiz.quiz_code)}
+                            >
                                 <h3 className="quiz-title">{quiz.quiz_name}</h3>
                                 <div className="quiz-details">
                                     <p><span className="detail-label">Code:</span> {quiz.quiz_code}</p>
                                     <p><span className="detail-label">Questions:</span> {quiz.questions.questions.length}</p>
                                     <p><span className="detail-label">Due:</span> {new Date(quiz.due_date).toLocaleDateString()}</p>
                                 </div>
-                                <button className="view-details-btn" onClick={() => handleViewDetails(quiz)}>
+                                <button className="view-details-btn" onClick={(e) => { e.stopPropagation(); handleViewDetails(quiz); }}>
                                     View Details
                                 </button>
                             </div>
@@ -307,7 +325,6 @@ function HomeContent({ currentUser, setActiveTab }) {
             <p className="welcome-text">Welcome, {currentUser?.username}! Manage your quizzes with ease.</p>
 
             {/* Edit Quiz Modal */}
-
             {selectedQuiz && (
                 <div className="modal-overlay" onClick={handleCancel}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -576,27 +593,27 @@ function MakeQuizzesContent({ currentUser }) {
     );
 }
 
-function ResultsContent({ currentUser }) {
-    const [quizCode, setQuizCode] = useState('');
+function ResultsContent({ currentUser, initialQuizCode }) {
+    const [quizCode, setQuizCode] = useState(initialQuizCode || '');
     const [attempts, setAttempts] = useState([]);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [quizName, setQuizName] = useState('');
 
-    const handleQuizCodeSubmit = async (e) => {
-        e.preventDefault();
-        if (!quizCode.trim()) {
-            setError('Please enter a quiz code');
-            return;
+    useEffect(() => {
+        if (initialQuizCode) {
+            fetchResults(initialQuizCode);
         }
+    }, [initialQuizCode]);
 
+    const fetchResults = async (code) => {
         setLoading(true);
         setError('');
         setAttempts([]);
         setQuizName('');
 
         try {
-            const response = await axios.get(`http://localhost:3000/api/quiz-attempts/${quizCode}`);
+            const response = await axios.get(`http://localhost:3000/api/quiz-attempts/${code}`);
             if (response.status === 200) {
                 setAttempts(response.data);
                 setQuizName(response.data[0]?.quiz_name || 'Quiz Results');
@@ -609,6 +626,15 @@ function ResultsContent({ currentUser }) {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleQuizCodeSubmit = async (e) => {
+        e.preventDefault();
+        if (!quizCode.trim()) {
+            setError('Please enter a quiz code');
+            return;
+        }
+        fetchResults(quizCode);
     };
 
     const chartData = {
@@ -631,26 +657,15 @@ function ResultsContent({ currentUser }) {
             y: {
                 beginAtZero: true,
                 max: 100,
-                title: {
-                    display: true,
-                    text: 'Score (%)',
-                },
+                title: { display: true, text: 'Score (%)' },
             },
             x: {
-                title: {
-                    display: true,
-                    text: 'Students',
-                },
+                title: { display: true, text: 'Students' },
             },
         },
         plugins: {
-            legend: {
-                position: 'top',
-            },
-            title: {
-                display: true,
-                text: `${quizName} - Score Distribution`,
-            },
+            legend: { position: 'top' },
+            title: { display: true, text: `${quizName} - Score Distribution` },
         },
     };
 
@@ -675,21 +690,35 @@ function ResultsContent({ currentUser }) {
 
             {error && <p className="error-message">{error}</p>}
 
-            {loading && <div className="loading-overlay"><div className="spinner"></div>Loading results...</div>}
+            {loading && (
+                <div className="loading-overlay">
+                    <div className="spinner"></div>
+                    <p>Loading results...</p>
+                </div>
+            )}
 
             {attempts.length > 0 && (
                 <div className="results-container">
                     <h3>{quizName}</h3>
                     <div className="stats-summary">
                         <p>Total Attempts: {attempts.length}</p>
-                        <p>Average Score: {(attempts.reduce((sum, a) => sum + a.score, 0) / (attempts.length * attempts[0].total_questions) * 100).toFixed(1)}%</p>
-                        <p>Highest Score: {Math.max(...attempts.map(a => a.score))} / {attempts[0].total_questions}</p>
+                        <p>
+                            Average Score:{' '}
+                            {(
+                                (attempts.reduce((sum, a) => sum + a.score, 0) /
+                                    (attempts.length * attempts[0].total_questions)) *
+                                100
+                            ).toFixed(1)}
+                            %
+                        </p>
+                        <p>
+                            Highest Score: {Math.max(...attempts.map((a) => a.score))} /{' '}
+                            {attempts[0].total_questions}
+                        </p>
                     </div>
-
                     <div className="chart-container" style={{ height: '400px', margin: '20px 0' }}>
                         <Bar data={chartData} options={chartOptions} />
                     </div>
-
                     <table className="results-table">
                         <thead>
                         <tr>
@@ -714,7 +743,7 @@ function ResultsContent({ currentUser }) {
             )}
 
             {!loading && !error && attempts.length === 0 && quizCode && (
-                <p className="no-results">No attempts found for quiz code: {quizCode}</p>
+                <p className="empty-state">No attempts found for quiz code: {quizCode}</p>
             )}
         </div>
     );
@@ -725,7 +754,7 @@ function SettingsContent({ currentUser }) {
     const [showPasswordFields, setShowPasswordFields] = useState(false);
     const [formData, setFormData] = useState({
         currentPassword: '',
-        newPassword: ''
+        newPassword: '',
     });
     const [message, setMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -742,14 +771,14 @@ function SettingsContent({ currentUser }) {
             const response = await axios.post('http://localhost:3000/change-password', {
                 ...formData,
                 username: currentUser.username,
-                userType: 'teacher'
+                userType: 'teacher',
             });
 
             if (response.status === 200) {
                 setMessage('Password changed successfully');
                 setFormData({
                     currentPassword: '',
-                    newPassword: ''
+                    newPassword: '',
                 });
                 setShowPasswordFields(false);
             } else {
@@ -765,9 +794,9 @@ function SettingsContent({ currentUser }) {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prevState => ({
+        setFormData((prevState) => ({
             ...prevState,
-            [name]: value
+            [name]: value,
         }));
     };
 
@@ -793,6 +822,7 @@ function SettingsContent({ currentUser }) {
                             value={formData.currentPassword}
                             onChange={handleInputChange}
                             disabled={isLoading}
+                            className="quiz-name-input"
                         />
                         <input
                             type="password"
@@ -801,8 +831,13 @@ function SettingsContent({ currentUser }) {
                             value={formData.newPassword}
                             onChange={handleInputChange}
                             disabled={isLoading}
+                            className="quiz-name-input"
                         />
-                        <button onClick={handlePasswordChange} disabled={isLoading}>
+                        <button
+                            onClick={handlePasswordChange}
+                            disabled={isLoading}
+                            className="save-btn"
+                        >
                             {isLoading ? 'Changing...' : 'Submit'}
                         </button>
                     </div>

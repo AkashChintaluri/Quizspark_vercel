@@ -1,6 +1,5 @@
 /* TeacherDashboard.css */
 
-/* Reset default styles (already handled in your base CSS, included for completeness) */
 html,
 body,
 #root {
@@ -118,6 +117,21 @@ body {
     font-weight: 600;
 }
 
+/* Add to your main dashboard CSS */
+.home-content-section {
+    position: relative;
+    padding: 2rem 0;
+}
+
+.home-content-section + .home-content-section::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 5%;
+    right: 5%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(175, 175, 175, 0.3) 50%, transparent 100%);
+}
 
 
 /* Dashboard Header */
@@ -595,4 +609,224 @@ body {
     .teacher-dashboard .quizzes-grid {
         grid-template-columns: 1fr;
     }
+}
+
+/* Results Content Styles */
+.teacher-dashboard .results-form-container {
+    margin-bottom: 15px;
+}
+
+.teacher-dashboard .results-form-container form {
+    display: flex;
+    gap: 10px;
+}
+
+.teacher-dashboard .quiz-code-input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #bdc3c7;
+    border-radius: 6px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.teacher-dashboard .quiz-code-input:focus {
+    border-color: #3498db;
+    outline: none;
+}
+
+.teacher-dashboard .view-results-btn {
+    padding: 10px 20px;
+    background: #3498db;
+    color: #fff;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(52, 152, 219, 0.3);
+}
+
+.teacher-dashboard .view-results-btn:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(52, 152, 219, 0.5);
+}
+
+.teacher-dashboard .results-container {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    margin-top: 20px;
+}
+
+.teacher-dashboard .stats-summary {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.teacher-dashboard .stats-summary p {
+    margin: 0;
+    color: #34495e;
+    font-size: 16px;
+}
+
+.teacher-dashboard .results-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.teacher-dashboard .results-table th,
+.teacher-dashboard .results-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #e4e7eb;
+}
+
+.teacher-dashboard .results-table th {
+    background: #f5f7fa;
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.teacher-dashboard .results-table td {
+    color: #7f8c8d;
+}
+
+/* Settings UI Styles */
+.teacher-dashboard .settings-container {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    margin-top: 20px;
+}
+
+.teacher-dashboard .settings-section {
+    margin-bottom: 20px;
+}
+
+.teacher-dashboard .section-title {
+    color: #2c3e50;
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 15px;
+}
+
+.teacher-dashboard .settings-options {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.teacher-dashboard .settings-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border: none;
+    border-radius: 25px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.teacher-dashboard .logout {
+    background: #e74c3c;
+    color: #fff;
+}
+
+.teacher-dashboard .logout:hover {
+    background: #c0392b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);
+}
+
+.teacher-dashboard .change-password {
+    background: #3498db;
+    color: #fff;
+}
+
+.teacher-dashboard .change-password:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
+}
+
+.teacher-dashboard .password-change-section {
+    border-top: 1px solid #e4e7eb;
+    padding-top: 20px;
+}
+
+.teacher-dashboard .password-change-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.teacher-dashboard .form-group label {
+    display: block;
+    color: #34495e;
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.teacher-dashboard .quiz-name-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #bdc3c7;
+    border-radius: 6px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.teacher-dashboard .quiz-name-input:focus {
+    border-color: #3498db;
+    outline: none;
+}
+
+.teacher-dashboard .save-btn {
+    padding: 10px 20px;
+    background: #2ecc71;
+    color: #fff;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(46, 204, 113, 0.3);
+}
+
+.teacher-dashboard .save-btn:hover {
+    background: #27ae60;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(46, 204, 113, 0.5);
+}
+
+.teacher-dashboard .message-container {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.teacher-dashboard .message {
+    padding: 10px;
+    border-radius: 8px;
+    background: #e8f0fe;
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.teacher-dashboard .quiz-card.clickable {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.teacher-dashboard .quiz-card.clickable:hover {
+    background-color: #f0f0f0;
+    transform: translateY(-5px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+    border: 1px solid #3498db;
 }
