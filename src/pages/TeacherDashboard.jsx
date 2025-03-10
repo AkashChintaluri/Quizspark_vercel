@@ -1,13 +1,12 @@
-import React, {
-    useState,
-    useEffect
-} from 'react';
-import {
-    useNavigate
-} from 'react-router-dom';
-import axios from 'axios'; // Import axios
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import './TeacherDashboard.css';
 import './MakeQuizzes.css';
+import { Bar } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 function TeacherDashboard() {
     const [activeTab, setActiveTab] = useState('home');
@@ -25,25 +24,18 @@ function TeacherDashboard() {
 
     return (
         <div className="teacher-dashboard">
-            <Sidebar activeTab={activeTab}
-                     setActiveTab={setActiveTab}
-                     currentUser={currentUser}/>
-            <Content activeTab={activeTab}
-                     currentUser={currentUser}/>
+            <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} currentUser={currentUser} />
+            <Content activeTab={activeTab} currentUser={currentUser} setActiveTab={setActiveTab} />
         </div>
     );
 }
 
-function Sidebar({
-                     activeTab,
-                     setActiveTab,
-                     currentUser
-                 }) {
+function Sidebar({ activeTab, setActiveTab, currentUser }) {
     return (
         <div className="sidebar">
             <h2>Teacher Dashboard</h2>
             {currentUser && (
-                <div className="welcome-box"> {/* Added wrapper div */}
+                <div className="welcome-box">
                     <p>Welcome, {currentUser.username}!</p>
                 </div>
             )}
@@ -53,10 +45,10 @@ function Sidebar({
                     {['Home', 'Make Quizzes', 'Results', 'Settings'].map((tab) => (
                         <li key={tab}>
                             <button
-                                className={activeTab === tab ? 'active' : ''}
-                                onClick={() => setActiveTab(tab)}
+                                className={activeTab === tab.toLowerCase() ? 'active' : ''}
+                                onClick={() => setActiveTab(tab.toLowerCase())}
                             >
-                                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                                {tab}
                             </button>
                         </li>
                     ))}
@@ -66,21 +58,18 @@ function Sidebar({
     );
 }
 
-function Content({
-                     activeTab,
-                     currentUser
-                 }) {
+function Content({ activeTab, currentUser, setActiveTab }) {
     switch (activeTab) {
-        case 'Home':
-            return <HomeContent currentUser={currentUser}/>;
-        case 'Make Quizzes':
-            return <MakeQuizzesContent currentUser={currentUser}/>;
-        case 'Results':
-            return <ResultsContent currentUser={currentUser}/>;
-        case 'Settings':
-            return <SettingsContent currentUser={currentUser}/>;
+        case 'home':
+            return <HomeContent currentUser={currentUser} setActiveTab={setActiveTab} />;
+        case 'make quizzes':
+            return <MakeQuizzesContent currentUser={currentUser} />;
+        case 'results':
+            return <ResultsContent currentUser={currentUser} />;
+        case 'settings':
+            return <SettingsContent currentUser={currentUser} />;
         default:
-            return <HomeContent currentUser={currentUser}/>;
+            return <HomeContent currentUser={currentUser} setActiveTab={setActiveTab} />;
     }
 }
 
@@ -90,6 +79,13 @@ function HomeContent({ currentUser, setActiveTab }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [selectedQuiz, setSelectedQuiz] = useState(null);
+    const [editQuizData, setEditQuizData] = useState({
+        quiz_name: '',
+        due_date: '',
+        questions: [],
+    });
+    const [message, setMessage] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -129,7 +125,78 @@ function HomeContent({ currentUser, setActiveTab }) {
     };
 
     const handleCreateQuiz = () => {
-        setActiveTab('Make Quizzes');
+        setActiveTab('make quizzes');
+    };
+
+    const handleViewDetails = (quiz) => {
+        setSelectedQuiz(quiz);
+        setEditQuizData({
+            quiz_name: quiz.quiz_name,
+            due_date: new Date(quiz.due_date).toISOString().slice(0, 16),
+            questions: quiz.questions.questions,
+        });
+    };
+
+    const handleEditInputChange = (e) => {
+        const { name, value } = e.target;
+        setEditQuizData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleQuestionChange = (index, field, value) => {
+        const updatedQuestions = [...editQuizData.questions];
+        updatedQuestions[index][field] = value;
+        setEditQuizData((prev) => ({ ...prev, questions: updatedQuestions }));
+    };
+
+    const handleOptionChange = (qIndex, oIndex, value) => {
+        const updatedQuestions = [...editQuizData.questions];
+        updatedQuestions[qIndex].options[oIndex].text = value;
+        setEditQuizData((prev) => ({ ...prev, questions: updatedQuestions }));
+    };
+
+    const handleCorrectOptionToggle = (qIndex, oIndex) => {
+        const updatedQuestions = [...editQuizData.questions];
+        updatedQuestions[qIndex].options = updatedQuestions[qIndex].options.map((opt, idx) => ({
+            ...opt,
+            is_correct: idx === oIndex ? !opt.is_correct : opt.is_correct,
+        }));
+        setEditQuizData((prev) => ({ ...prev, questions: updatedQuestions }));
+    };
+
+    const handleSaveChanges = async () => {
+        try {
+            const response = await axios.put(`http://localhost:3000/api/quizzes/${selectedQuiz.quiz_id}`, {
+                quiz_name: editQuizData.quiz_name,
+                due_date: editQuizData.due_date,
+                questions: { questions: editQuizData.questions },
+            });
+
+            if (response.status === 200) {
+                setMessage('Quiz updated successfully!');
+                setQuizzes(quizzes.map((q) =>
+                    q.quiz_id === selectedQuiz.quiz_id
+                        ? { ...q, quiz_name: editQuizData.quiz_name, due_date: editQuizData.due_date, questions: { questions: editQuizData.questions } }
+                        : q
+                ));
+                setFilteredQuizzes(filteredQuizzes.map((q) =>
+                    q.quiz_id === selectedQuiz.quiz_id
+                        ? { ...q, quiz_name: editQuizData.quiz_name, due_date: editQuizData.due_date, questions: { questions: editQuizData.questions } }
+                        : q
+                ));
+                setTimeout(() => setMessage(''), 3000);
+                setSelectedQuiz(null);
+            } else {
+                setMessage('Failed to update quiz.');
+            }
+        } catch (error) {
+            console.error('Error updating quiz:', error);
+            setMessage('An error occurred while updating the quiz.');
+        }
+    };
+
+    const handleCancel = () => {
+        setSelectedQuiz(null);
+        setMessage('');
     };
 
     // Get stats
@@ -197,7 +264,9 @@ function HomeContent({ currentUser, setActiveTab }) {
                                     <p><span className="detail-label">Due:</span> {new Date(recentQuiz.due_date).toLocaleDateString()}</p>
                                     <p><span className="detail-label">Created:</span> {new Date(recentQuiz.created_at).toLocaleDateString()}</p>
                                 </div>
-                                <button className="view-details-btn">View Details</button>
+                                <button className="view-details-btn" onClick={() => handleViewDetails(recentQuiz)}>
+                                    View Details
+                                </button>
                             </div>
                         </div>
                     )}
@@ -224,24 +293,104 @@ function HomeContent({ currentUser, setActiveTab }) {
                                     <p><span className="detail-label">Questions:</span> {quiz.questions.questions.length}</p>
                                     <p><span className="detail-label">Due:</span> {new Date(quiz.due_date).toLocaleDateString()}</p>
                                 </div>
-                                <button className="view-details-btn">View Details</button>
+                                <button className="view-details-btn" onClick={() => handleViewDetails(quiz)}>
+                                    View Details
+                                </button>
                             </div>
                         ))}
                     </div>
                 </>
             )}
 
+            {message && <div className="message">{message}</div>}
+
             <p className="welcome-text">Welcome, {currentUser?.username}! Manage your quizzes with ease.</p>
+
+            {/* Edit Quiz Modal */}
+
+            {selectedQuiz && (
+                <div className="modal-overlay" onClick={handleCancel}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h4>Edit Quiz Details</h4>
+                            <button className="close-btn" onClick={handleCancel}>✕</button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="form-group">
+                                <label>Quiz Name:</label>
+                                <input
+                                    type="text"
+                                    name="quiz_name"
+                                    value={editQuizData.quiz_name}
+                                    onChange={handleEditInputChange}
+                                    className="quiz-name-input"
+                                    placeholder="Enter quiz name"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Due Date:</label>
+                                <input
+                                    type="datetime-local"
+                                    name="due_date"
+                                    value={editQuizData.due_date}
+                                    onChange={handleEditInputChange}
+                                    className="due-date-input"
+                                    min={new Date().toISOString().slice(0, 16)}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Questions:</label>
+                                <div className="questions-container">
+                                    {editQuizData.questions.map((question, qIndex) => (
+                                        <div key={qIndex} className="edit-question-section">
+                                            <input
+                                                type="text"
+                                                value={question.question_text}
+                                                onChange={(e) => handleQuestionChange(qIndex, 'question_text', e.target.value)}
+                                                placeholder={`Question ${qIndex + 1}`}
+                                                className="question-input"
+                                            />
+                                            <div className="options-section">
+                                                {question.options.map((option, oIndex) => (
+                                                    <div key={oIndex} className="option-input">
+                                                        <input
+                                                            type="text"
+                                                            value={option.text}
+                                                            onChange={(e) => handleOptionChange(qIndex, oIndex, e.target.value)}
+                                                            placeholder={`Option ${oIndex + 1}`}
+                                                            className="option-text-input"
+                                                        />
+                                                        <label className="correct-label">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={option.is_correct}
+                                                                onChange={() => handleCorrectOptionToggle(qIndex, oIndex)}
+                                                            />
+                                                            Correct
+                                                        </label>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="modal-footer">
+                            <button onClick={handleSaveChanges} className="save-btn">Save Changes</button>
+                            <button onClick={handleCancel} className="cancel-btn">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
 
-function MakeQuizzesContent({
-                                currentUser
-                            }) {
+function MakeQuizzesContent({ currentUser }) {
     const [quizName, setQuizName] = useState('');
     const [quizCode, setQuizCode] = useState('');
-    const [dueDate, setDueDate] = useState(''); // New state for due date
+    const [dueDate, setDueDate] = useState('');
     const [questions, setQuestions] = useState([]);
     const [currentQuestion, setCurrentQuestion] = useState('');
     const [options, setOptions] = useState(['', '', '', '']);
@@ -307,16 +456,16 @@ function MakeQuizzesContent({
             return;
         }
 
-        setIsLoading(true); // Start loading
+        setIsLoading(true);
         const generatedCode = generateQuizCode();
         setQuizCode(generatedCode);
 
         const quizData = {
             quiz_name: quizName,
             quiz_code: generatedCode,
-            created_by: currentUser.id, // Changed to use ID instead of username
+            created_by: currentUser.id,
             questions: questions,
-            due_date: dueDate // Add due_date to the payload
+            due_date: dueDate,
         };
 
         try {
@@ -329,7 +478,7 @@ function MakeQuizzesContent({
             if (response.status === 201) {
                 alert(`Quiz created successfully! Quiz Code: ${generatedCode}`);
                 setQuizName('');
-                setDueDate(''); // Reset due date
+                setDueDate('');
                 setQuestions([]);
                 resetForm();
             } else {
@@ -340,7 +489,7 @@ function MakeQuizzesContent({
             console.error('Error submitting quiz:', error);
             alert('An error occurred while creating the quiz.');
         } finally {
-            setIsLoading(false); // End loading
+            setIsLoading(false);
         }
     };
 
@@ -355,15 +504,15 @@ function MakeQuizzesContent({
                     onChange={(e) => setQuizName(e.target.value)}
                     placeholder="Enter Quiz Name"
                     className="quiz-name-input"
-                    disabled={isLoading} // Disable input when loading
+                    disabled={isLoading}
                 />
                 <input
                     type="datetime-local"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
                     className="due-date-input"
-                    min={new Date().toISOString().slice(0, 16)} // Prevents past dates
-                    disabled={isLoading} // Disable input when loading
+                    min={new Date().toISOString().slice(0, 16)}
+                    disabled={isLoading}
                 />
             </div>
 
@@ -374,7 +523,7 @@ function MakeQuizzesContent({
                     onChange={(e) => setCurrentQuestion(e.target.value)}
                     placeholder="Enter your question"
                     className="question-input"
-                    disabled={isLoading} // Disable input when loading
+                    disabled={isLoading}
                 />
                 <div className="options-section">
                     {options.map((option, index) => (
@@ -384,14 +533,14 @@ function MakeQuizzesContent({
                                 value={option}
                                 onChange={(e) => handleOptionChange(index, e.target.value)}
                                 placeholder={`Option ${index + 1}`}
-                                disabled={isLoading} // Disable input when loading
+                                disabled={isLoading}
                             />
                             <label>
                                 <input
                                     type="checkbox"
                                     checked={correctOptions.includes(index)}
                                     onChange={() => handleCorrectOptionToggle(index)}
-                                    disabled={isLoading} // Disable input when loading
+                                    disabled={isLoading}
                                 />
                                 Correct
                             </label>
@@ -427,72 +576,151 @@ function MakeQuizzesContent({
     );
 }
 
-function ResultsContent({
-                            currentUser
-                        }) {
-    const [results, setResults] = useState([]);
+function ResultsContent({ currentUser }) {
+    const [quizCode, setQuizCode] = useState('');
+    const [attempts, setAttempts] = useState([]);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [quizName, setQuizName] = useState('');
 
-    useEffect(() => {
-        const fetchResults = async () => {
-            setLoading(true);
-            setError('');
-            try {
-                const response = await axios.get(`http://localhost:3000/api/teacher-results/${currentUser.id}`);
-                if (response.status !== 200) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                setResults(response.data);
-            } catch (e) {
-                console.error("Could not fetch results:", e);
-                setError("Failed to load results.");
-            } finally {
-                setLoading(false);
+    const handleQuizCodeSubmit = async (e) => {
+        e.preventDefault();
+        if (!quizCode.trim()) {
+            setError('Please enter a quiz code');
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+        setAttempts([]);
+        setQuizName('');
+
+        try {
+            const response = await axios.get(`http://localhost:3000/api/quiz-attempts/${quizCode}`);
+            if (response.status === 200) {
+                setAttempts(response.data);
+                setQuizName(response.data[0]?.quiz_name || 'Quiz Results');
+            } else {
+                setError(response.data.message || 'Failed to fetch attempts');
             }
-        };
+        } catch (err) {
+            console.error('Error fetching quiz attempts:', err);
+            setError(err.response?.data?.message || 'An error occurred while fetching results');
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        fetchResults();
-    }, [currentUser.id]);
+    const chartData = {
+        labels: attempts.map((attempt) => attempt.student_username),
+        datasets: [
+            {
+                label: 'Score Percentage',
+                data: attempts.map((attempt) => (attempt.score / attempt.total_questions) * 100),
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1,
+            },
+        ],
+    };
+
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100,
+                title: {
+                    display: true,
+                    text: 'Score (%)',
+                },
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Students',
+                },
+            },
+        },
+        plugins: {
+            legend: {
+                position: 'top',
+            },
+            title: {
+                display: true,
+                text: `${quizName} - Score Distribution`,
+            },
+        },
+    };
 
     return (
         <div className="content">
-            <h2>Results</h2>
+            <h2>Quiz Results</h2>
+            <div className="results-form-container">
+                <form onSubmit={handleQuizCodeSubmit}>
+                    <input
+                        type="text"
+                        placeholder="Enter Quiz Code to View Results"
+                        value={quizCode}
+                        onChange={(e) => setQuizCode(e.target.value)}
+                        className="quiz-code-input"
+                        disabled={loading}
+                    />
+                    <button type="submit" className="view-results-btn" disabled={loading}>
+                        {loading ? 'Loading...' : 'View Results'}
+                    </button>
+                </form>
+            </div>
 
-            {loading && <p>Loading results...</p>}
             {error && <p className="error-message">{error}</p>}
 
-            {results.length > 0 ? (
-                <table className="results-table">
-                    <thead>
-                    <tr>
-                        <th>Student</th>
-                        <th>Quiz</th>
-                        <th>Score</th>
-                        <th>Date</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {results.map(result => (
-                        <tr key={result.attempt_id}>
-                            <td>{result.student_username}</td>
-                            <td>{result.quiz_name}</td>
-                            <td>{result.score} / {result.total_questions}</td>
-                            <td>{new Date(result.attempt_date).toLocaleDateString()}</td>
+            {loading && <div className="loading-overlay"><div className="spinner"></div>Loading results...</div>}
+
+            {attempts.length > 0 && (
+                <div className="results-container">
+                    <h3>{quizName}</h3>
+                    <div className="stats-summary">
+                        <p>Total Attempts: {attempts.length}</p>
+                        <p>Average Score: {(attempts.reduce((sum, a) => sum + a.score, 0) / (attempts.length * attempts[0].total_questions) * 100).toFixed(1)}%</p>
+                        <p>Highest Score: {Math.max(...attempts.map(a => a.score))} / {attempts[0].total_questions}</p>
+                    </div>
+
+                    <div className="chart-container" style={{ height: '400px', margin: '20px 0' }}>
+                        <Bar data={chartData} options={chartOptions} />
+                    </div>
+
+                    <table className="results-table">
+                        <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Score</th>
+                            <th>Date</th>
+                            <th>Attempt ID</th>
                         </tr>
-                    ))}
-                    </tbody>
-                </table>
-            ) : (!loading && !error) ? (
-                <p>No results found.</p>
-            ) : null}
+                        </thead>
+                        <tbody>
+                        {attempts.map((attempt) => (
+                            <tr key={attempt.attempt_id}>
+                                <td>{attempt.student_username}</td>
+                                <td>{attempt.score} / {attempt.total_questions}</td>
+                                <td>{new Date(attempt.attempt_date).toLocaleString()}</td>
+                                <td>{attempt.attempt_id}</td>
+                            </tr>
+                        ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
+            {!loading && !error && attempts.length === 0 && quizCode && (
+                <p className="no-results">No attempts found for quiz code: {quizCode}</p>
+            )}
         </div>
     );
 }
 
-function SettingsContent({
-                             currentUser
-                         }) {
+function SettingsContent({ currentUser }) {
     const navigate = useNavigate();
     const [showPasswordFields, setShowPasswordFields] = useState(false);
     const [formData, setFormData] = useState({
@@ -536,10 +764,7 @@ function SettingsContent({
     };
 
     const handleInputChange = (e) => {
-        const {
-            name,
-            value
-        } = e.target;
+        const { name, value } = e.target;
         setFormData(prevState => ({
             ...prevState,
             [name]: value

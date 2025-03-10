@@ -193,6 +193,35 @@ function startServer() {
         }
     });
 
+    app.put('/api/quizzes/:quiz_id', async (req, res) => {
+        const { quiz_id } = req.params;
+        const { quiz_name, due_date, questions } = req.body;
+
+        try {
+            const query = `
+                UPDATE quizzes
+                SET quiz_name = $1, due_date = $2, questions = $3::jsonb
+                WHERE quiz_id = $4
+                RETURNING quiz_id;
+            `;
+            const values = [quiz_name, due_date, JSON.stringify(questions), quiz_id];
+            const result = await pool.query(query, values);
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ message: 'Quiz not found' });
+            }
+
+            res.status(200).json({ message: 'Quiz updated successfully' });
+        } catch (error) {
+            console.error('Error updating quiz:', error);
+            res.status(500).json({
+                message: 'Failed to update quiz',
+                error: error.message,
+                stack: error.stack
+            });
+        }
+    });
+
     app.get('/api/quizzes/:quiz_code', async (req, res) => {
         const { quiz_code } = req.params;
 
@@ -263,7 +292,7 @@ function startServer() {
 
             const attemptId = insertResult.rows[0].attempt_id;
 
-            res.status(201).json({ /* response data */ });
+            res.status(201).json({ attemptId, score, totalQuestions });
         } catch (error) {
             console.error('Error submitting quiz:', error);
             res.status(500).json({ message: 'Failed to submit quiz', error: error.message });
@@ -396,7 +425,7 @@ function startServer() {
             WHERE user_id = $1;
         `;
             const result = await pool.query(query, [user_id]);
-            console.log('User stats response:', result.rows[0]); // Add this
+            console.log('User stats response:', result.rows[0]);
             res.json(result.rows[0]);
         } catch (error) {
             console.error('Error fetching user stats:', error);
@@ -514,6 +543,93 @@ function startServer() {
             });
         }
     });
+
+    app.get('/api/quiz-attempts/:quiz_code', async (req, res) => {
+        const { quiz_code } = req.params;
+
+        try {
+            const query = `
+            SELECT 
+                qa.attempt_id,
+                qa.user_id,
+                s.username AS student_username,
+                qa.score,
+                qa.total_questions,
+                qa.attempt_date,
+                q.quiz_name
+            FROM quiz_attempts qa
+            JOIN quizzes q ON qa.quiz_id = q.quiz_id
+            JOIN student_login s ON qa.user_id = s.id
+            WHERE q.quiz_code = $1
+            ORDER BY qa.attempt_date DESC;
+        `;
+            const result = await pool.query(query, [quiz_code]);
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ message: 'No attempts found for this quiz' });
+            }
+
+            res.json(result.rows);
+        } catch (error) {
+            console.error('Error fetching quiz attempts:', error);
+            res.status(500).json({ error: 'Failed to fetch quiz attempts', details: error.message });
+        }
+    });
+
+    // Retest Requests Endpoints
+    app.post('/api/retest-requests', async (req, res) => {
+        try {
+            const { student_id, quiz_id, attempt_id } = req.body;
+            const result = await pool.query(
+                `INSERT INTO retest_requests 
+       (student_id, quiz_id, attempt_id) 
+       VALUES ($1, $2, $3) 
+       RETURNING *`,
+                [student_id, quiz_id, attempt_id]
+            );
+            res.status(201).json(result.rows[0]);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Server error' });
+        }
+    });
+
+    app.get('/api/retest-requests/teacher/:teacher_id', async (req, res) => {
+        try {
+            const { teacher_id } = req.params;
+            const result = await pool.query(
+                `SELECT r.*, s.username as student_name, q.title as quiz_title
+       FROM retest_requests r
+       JOIN students s ON r.student_id = s.id
+       JOIN quizzes q ON r.quiz_id = q.id
+       WHERE q.teacher_id = $1 AND r.status = 'pending'`,
+                [teacher_id]
+            );
+            res.json(result.rows);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Server error' });
+        }
+    });
+
+    app.put('/api/retest-requests/:id', async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { status } = req.body;
+            const result = await pool.query(
+                `UPDATE retest_requests 
+       SET status = $1 
+       WHERE id = $2 
+       RETURNING *`,
+                [status, id]
+            );
+            res.json(result.rows[0]);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Server error' });
+        }
+    });
+
 
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

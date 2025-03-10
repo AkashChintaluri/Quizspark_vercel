@@ -125,48 +125,51 @@ body {
     gap: 40px;
 }
 
-.stats-section,
-.upcoming-quizzes,
-.attempted-quizzes,
-.recent-results {
+/* Stats Section */
+.stats-section {
     background: #fff;
     padding: 25px;
     border-radius: 12px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
     transition: transform 0.3s ease;
+    width: 100%; /* Ensure full width of content area */
 }
 
-.stats-section:hover,
-.upcoming-quizzes:hover,
-.attempted-quizzes:hover,
-.recent-results:hover {
+.stats-section:hover {
     transform: translateY(-5px);
 }
 
-.stats-section h3,
-.upcoming-quizzes h3,
-.attempted-quizzes h3,
-.recent-results h3 {
+.stats-section h3 {
     color: #2c3e50;
     margin-bottom: 20px;
     font-size: 22px;
     font-weight: 600;
 }
 
+/* Stats Grid */
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(3, 1fr); /* 3 equal columns */
     gap: 25px;
     margin-top: 20px;
+    width: 100%; /* Ensure it spans the full width */
 }
 
+/* Stat Card */
 .stat-card {
-    text-align: center;
-    padding: 20px;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: linear-gradient(90deg, #3498db 0%, #2980b9 100%); /* Blue gradient to match screenshot */
+    padding: 20px 40px; /* Increased horizontal padding to stretch card further */
     border-radius: 10px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
+    width: 100%; /* Stretch to fill the grid cell */
+    min-height: 120px; /* Consistent rectangular height */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Center content vertically */
+    align-items: center; /* Center content horizontally */
+    color: #fff; /* White text for contrast */
+    box-sizing: border-box; /* Ensure padding is included in width */
 }
 
 .stat-card:hover {
@@ -176,16 +179,54 @@ body {
 
 .stat-card h4 {
     margin: 0 0 12px 0;
-    color: #34495e;
     font-size: 1.2em;
     font-weight: 500;
+    width: 100%;
+    text-align: center; /* Center the label */
+    white-space: nowrap; /* Prevent text wrapping */
+    overflow: hidden;
+    text-overflow: ellipsis; /* Handle long text */
 }
 
 .stat-card p {
     margin: 0;
     font-size: 1.8em;
-    color: #3498db;
     font-weight: bold;
+    width: 100%;
+    text-align: center; /* Center the value */
+}
+
+/* Upcoming and Attempted Quizzes Containers */
+.upcoming-quizzes,
+.attempted-quizzes {
+    margin-top: 20px; /* Consistent spacing */
+    background: #fff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease;
+}
+
+.upcoming-quizzes:hover,
+.attempted-quizzes:hover {
+    transform: translateY(-5px);
+}
+
+.upcoming-quizzes h3,
+.attempted-quizzes h3 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+/* Quiz Lists */
+.upcoming-quizzes .quiz-list,
+.attempted-quizzes .quiz-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
 }
 
 /* Quiz Cards (Shared by Upcoming and Attempted Quizzes) */
@@ -195,12 +236,13 @@ body {
     border-radius: 10px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
+    border: 1px solid transparent; /* Added for hover effect */
 }
 
 .quiz-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
-    border: 1px solid #3498db;
+    border: 1px solid #3498db; /* Blue outline on hover for both */
 }
 
 .quiz-card h4 {
@@ -216,6 +258,14 @@ body {
     font-size: 14px;
 }
 
+.quiz-card.clickable {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.quiz-card.clickable:hover {
+    background-color: #f0f0f0; /* Light hover effect */
+}
 
 /* Take Quiz Content Styles */
 .take-quiz-content {
@@ -487,7 +537,7 @@ body {
     }
 
     .stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        grid-template-columns: repeat(2, 1fr); /* 2 columns on medium screens */
     }
 
     .upcoming-quizzes .quiz-list,
@@ -519,7 +569,14 @@ body {
         border-radius: 0;
     }
 
-    .stats-grid,
+    .stats-grid {
+        grid-template-columns: 1fr; /* Stack on small screens */
+    }
+
+    .stat-card {
+        min-height: 100px; /* Slightly smaller height for mobile */
+    }
+
     .upcoming-quizzes .quiz-list,
     .attempted-quizzes .quiz-list {
         grid-template-columns: 1fr;
@@ -528,67 +585,4 @@ body {
     .welcome-box {
         font-size: 0.9em;
     }
-}
-
-/* Upcoming and Attempted Quizzes Containers */
-.upcoming-quizzes,
-.attempted-quizzes {
-    margin-top: 20px; /* Consistent spacing */
-    background: #fff;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    transition: transform 0.3s ease;
-}
-
-.upcoming-quizzes:hover,
-.attempted-quizzes:hover {
-    transform: translateY(-5px);
-}
-
-/* Quiz Lists */
-.upcoming-quizzes .quiz-list,
-.attempted-quizzes .quiz-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
-}
-
-/* Quiz Cards (Shared by Upcoming and Attempted Quizzes) */
-.quiz-card {
-    padding: 20px;
-    background: #f8f9fa;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-    border: 1px solid transparent; /* Added for hover effect */
-}
-
-.quiz-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
-    border: 1px solid #3498db; /* Blue outline on hover for both */
-}
-
-.quiz-card h4 {
-    margin: 0 0 12px 0;
-    color: #34495e;
-    font-size: 18px;
-    font-weight: 500;
-}
-
-.quiz-card p {
-    margin: 6px 0;
-    color: #7f8c8d;
-    font-size: 14px;
-}
-
-.quiz-card.clickable {
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.quiz-card.clickable:hover {
-    background-color: #f0f0f0; /* Light hover effect */
 }
