@@ -1,6 +1,5 @@
-// StudentDashboard.js
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom'; // Import useLocation
+import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import './StudentDashboard.css';
 import './TakeQuiz.css';
@@ -67,16 +66,11 @@ function StudentDashboard() {
 }
 
 function Sidebar({ activeTab, setActiveTab, currentUser, navigate }) {
-    const handleTabChange = (tab, quizCode = null) => {
-        const tabName = tab.toLowerCase();
-        setActiveTab(tabName);
+    const handleTabChange = (tab) => {
+        setActiveTab(tab.toLowerCase());
         // Reset URL to base dashboard when switching tabs (except for 'results' if manually clicked)
-        if (tabName !== 'results' && tabName !== 'take quiz') {
+        if (tab.toLowerCase() !== 'results') {
             navigate('/student-dashboard', { replace: true });
-        } else if (tabName === 'take quiz' && quizCode) {
-            navigate(`/student-dashboard?quizCode=${quizCode}`, { replace: true }); // Navigate with quizCode
-        } else if (tabName === 'results' && quizCode) {
-            navigate(`/student-dashboard/results/${quizCode}`, { replace: true });
         }
     };
 
@@ -174,8 +168,8 @@ function HomeContent({ currentUser, setActiveTab }) {
     }, [currentUser?.id]);
 
     const handleQuizClick = (quizCode) => {
-        setActiveTab('take quiz');
-        navigate(`/student-dashboard?quizCode=${quizCode}`); // Navigate to Take Quiz with quizCode
+        setActiveTab('results');
+        navigate(`/student-dashboard/results/${quizCode}`);
     };
 
     if (loading) {
@@ -192,7 +186,9 @@ function HomeContent({ currentUser, setActiveTab }) {
                 <div className="error-message">{error}</div>
             ) : (
                 <>
-                    <h2>Welcome, {currentUser?.username}!</h2>
+                    <div className="dashboard-header">
+                        <h2 className="dashboard-title">Welcome, {currentUser?.username}!</h2>
+                    </div>
                     <div className="stats-section">
                         <h3>Your Statistics</h3>
                         <div className="stats-grid">
@@ -217,7 +213,7 @@ function HomeContent({ currentUser, setActiveTab }) {
                         ) : (
                             <div className="quiz-list">
                                 {upcomingQuizzes.map((quiz) => (
-                                    <div key={quiz.quiz_id} className="quiz-card clickable" onClick={() => handleQuizClick(quiz.quiz_code)}>
+                                    <div key={quiz.quiz_id} className="quiz-card">
                                         <h4>{quiz.quiz_name}</h4>
                                         <p>Code: {quiz.quiz_code}</p>
                                         <p>Teacher: {quiz.teacher_name}</p>
@@ -248,14 +244,14 @@ function HomeContent({ currentUser, setActiveTab }) {
                             </div>
                         )}
                     </div>
-                    <TeacherList studentId={currentUser?.id} />
+                    <TeacherList studentId={currentUser?.id}/>
                 </>
             )}
         </div>
     );
 }
 
-function TakeQuizContent({ currentUser, setActiveTab }) {
+function TakeQuizContent({currentUser, setActiveTab}) {
     const [quizCode, setQuizCode] = useState('');
     const [quizData, setQuizData] = useState(null);
     const [error, setError] = useState('');
@@ -263,32 +259,24 @@ function TakeQuizContent({ currentUser, setActiveTab }) {
     const [showQuizCodeInput, setShowQuizCodeInput] = useState(true);
     const [submissionResult, setSubmissionResult] = useState(null);
     const [loading, setLoading] = useState(false);
-    const location = useLocation(); // Use useLocation to access URL parameters
-    const navigate = useNavigate();
 
-    // Extract quizCode from URL on component mount
-    useEffect(() => {
-        const params = new URLSearchParams(location.search);
-        const urlQuizCode = params.get('quizCode');
-        if (urlQuizCode) {
-            setQuizCode(urlQuizCode);
-            setShowQuizCodeInput(false);
-            // Optionally, trigger the quiz loading immediately
-            loadQuiz(urlQuizCode);
-        }
-    }, [location.search]);
-
-    const loadQuiz = async (code) => {
+    const handleQuizCodeSubmit = async (e) => {
+        e.preventDefault();
         setError('');
         setSubmissionResult(null);
-        setLoading(true);
 
+        if (!quizCode.trim()) {
+            setError('Please enter a quiz code.');
+            return;
+        }
+
+        setLoading(true);
         try {
             if (!currentUser?.id) {
                 throw new Error('User not authenticated');
             }
 
-            const attemptCheckResponse = await axios.get(`${API_BASE_URL}/check-quiz-attempt/${code}/${currentUser.id}`);
+            const attemptCheckResponse = await axios.get(`${API_BASE_URL}/check-quiz-attempt/${quizCode}/${currentUser.id}`);
             if (attemptCheckResponse.status !== 200) {
                 throw new Error(`Failed to check quiz attempt: ${attemptCheckResponse.status}`);
             }
@@ -301,7 +289,7 @@ function TakeQuizContent({ currentUser, setActiveTab }) {
                 return;
             }
 
-            const response = await axios.get(`${API_BASE_URL}/quizzes/${code}`);
+            const response = await axios.get(`${API_BASE_URL}/quizzes/${quizCode}`);
             if (response.status !== 200) {
                 throw new Error(`Failed to fetch quiz. Status: ${response.status}`);
             }
@@ -313,19 +301,9 @@ function TakeQuizContent({ currentUser, setActiveTab }) {
             console.error('Error fetching quiz:', err);
             setError(err.message || 'An error occurred while fetching the quiz.');
             setQuizData(null);
-            setShowQuizCodeInput(true);
         } finally {
             setLoading(false);
         }
-    };
-
-    const handleQuizCodeSubmit = async (e) => {
-        e.preventDefault();
-        if (!quizCode.trim()) {
-            setError('Please enter a quiz code.');
-            return;
-        }
-        loadQuiz(quizCode);
     };
 
     const handleAnswerChange = (questionIndex, optionIndex) => {
@@ -358,7 +336,6 @@ function TakeQuizContent({ currentUser, setActiveTab }) {
 
             setSubmissionResult(response.data);
             setActiveTab('results');
-            navigate(`/student-dashboard/results/${quizCode}`);
         } catch (error) {
             console.error('Error submitting quiz:', error);
             setError(error.message || 'An error occurred while submitting the quiz');
