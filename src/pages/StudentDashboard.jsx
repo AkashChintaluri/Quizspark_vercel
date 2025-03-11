@@ -30,7 +30,6 @@ function StudentDashboard() {
             if (parsedUser?.id) {
                 setCurrentUser(parsedUser);
             } else {
-                console.warn('User data missing "id" property, redirecting to login.');
                 localStorage.removeItem('user');
                 navigate('/');
             }
@@ -38,7 +37,6 @@ function StudentDashboard() {
             console.error('Error parsing user data:', error);
             localStorage.removeItem('user');
             navigate('/');
-            return;
         } finally {
             setLoading(false);
         }
@@ -66,36 +64,8 @@ function StudentDashboard() {
     );
 }
 
-function Content({ activeTab, setActiveTab, currentUser, location }) {
-    const { pathname } = location;
-
-    // Handle direct URL access first
-    if (pathname.includes('/take-quiz/')) {
-        return <TakeQuizContent currentUser={currentUser} />;
-    }
-
-    if (pathname.includes('/quiz/')) {
-        return <ResultsContent currentUser={currentUser} />;
-    }
-
-    // Handle tab navigation
-    switch (activeTab) {
-        case 'home':
-            return <HomeContent currentUser={currentUser} setActiveTab={setActiveTab} />;
-        case 'take quiz':
-            return <TakeQuizContent currentUser={currentUser} />;
-        case 'results':
-            return <ResultsContent currentUser={currentUser} />;
-        case 'settings':
-            return <SettingsContent currentUser={currentUser} />;
-        default:
-            return <HomeContent currentUser={currentUser} setActiveTab={setActiveTab} />;
-    }
-}
-
 function Sidebar({ activeTab, currentUser, handleTabChange, navigate }) {
     const handleTabClick = (tab) => {
-        // Reset URL to base path when clicking tabs
         navigate('/student-dashboard');
         handleTabChange(tab);
     };
@@ -126,6 +96,30 @@ function Sidebar({ activeTab, currentUser, handleTabChange, navigate }) {
     );
 }
 
+function Content({ activeTab, setActiveTab, currentUser, location }) {
+    const { pathname } = location;
+
+    if (pathname.includes('/take-quiz/')) {
+        return <TakeQuizContent currentUser={currentUser} />;
+    }
+
+    if (pathname.includes('/quiz/')) {
+        return <ResultsContent currentUser={currentUser} />;
+    }
+
+    switch (activeTab) {
+        case 'home':
+            return <HomeContent currentUser={currentUser} setActiveTab={setActiveTab} />;
+        case 'take quiz':
+            return <TakeQuizContent currentUser={currentUser} />;
+        case 'results':
+            return <ResultsContent currentUser={currentUser} />;
+        case 'settings':
+            return <SettingsContent currentUser={currentUser} />;
+        default:
+            return <HomeContent currentUser={currentUser} setActiveTab={setActiveTab} />;
+    }
+}
 
 function HomeContent({ currentUser, setActiveTab }) {
     const [upcomingQuizzes, setUpcomingQuizzes] = useState([]);
@@ -145,13 +139,13 @@ function HomeContent({ currentUser, setActiveTab }) {
             setError('');
             try {
                 if (!currentUser?.id) {
-                    throw new Error('Invalid user session - currentUser.id is missing');
+                    throw new Error('Invalid user session');
                 }
 
                 const endpoints = [
-                    `/api/upcoming-quizzes/${currentUser.id}`,
-                    `/api/user-stats/${currentUser.id}`,
-                    `/api/attempted-quizzes/${currentUser.id}`,
+                    `${API_BASE_URL}/upcoming-quizzes/${currentUser.id}`,
+                    `${API_BASE_URL}/user-stats/${currentUser.id}`,
+                    `${API_BASE_URL}/attempted-quizzes/${currentUser.id}`,
                 ];
 
                 const [upcomingResponse, statsResponse, attemptedResponse] = await Promise.all(
@@ -162,7 +156,6 @@ function HomeContent({ currentUser, setActiveTab }) {
                 setStats(statsResponse.data || { total_attempts: 0, average_score: 0, completed_quizzes: 0 });
                 setAttemptedQuizzes(attemptedResponse.data);
             } catch (err) {
-                console.error('Error fetching data:', err.message);
                 setError('Failed to load dashboard data.');
             } finally {
                 setLoading(false);
@@ -170,7 +163,7 @@ function HomeContent({ currentUser, setActiveTab }) {
         };
 
         fetchHomeData();
-    }, [currentUser?.id]);
+    }, [currentUser]);
 
     const handleUpcomingQuizClick = (quizCode) => {
         setActiveTab('take quiz');
@@ -200,7 +193,6 @@ function HomeContent({ currentUser, setActiveTab }) {
                         <h2>Welcome, {currentUser?.username}!</h2>
                     </div>
 
-                    {/* Statistics Section */}
                     <div className="stats-section">
                         <h3>Your Statistics</h3>
                         <div className="stats-grid">
@@ -219,7 +211,6 @@ function HomeContent({ currentUser, setActiveTab }) {
                         </div>
                     </div>
 
-                    {/* Upcoming Quizzes Section */}
                     <div className="upcoming-quizzes">
                         <h3>Upcoming Quizzes</h3>
                         {upcomingQuizzes.length === 0 ? (
@@ -242,7 +233,6 @@ function HomeContent({ currentUser, setActiveTab }) {
                         )}
                     </div>
 
-                    {/* Attempted Quizzes Section */}
                     <div className="attempted-quizzes">
                         <h3>Attempted Quizzes</h3>
                         {attemptedQuizzes.length === 0 ? (
@@ -265,7 +255,6 @@ function HomeContent({ currentUser, setActiveTab }) {
                         )}
                     </div>
 
-                    {/* Teacher List Component */}
                     <TeacherList studentId={currentUser?.id} />
                 </>
             )}
@@ -280,26 +269,21 @@ function TakeQuizContent({ currentUser }) {
     const [selectedAnswers, setSelectedAnswers] = useState({});
     const [showQuizCodeInput, setShowQuizCodeInput] = useState(true);
     const [loading, setLoading] = useState(false);
-    const { quizCode: urlQuizCode } = useParams(); // Get quizCode from URL
+    const { quizCode: urlQuizCode } = useParams();
     const navigate = useNavigate();
 
     useEffect(() => {
-        console.log('useEffect triggered with urlQuizCode:', urlQuizCode, 'currentUser:', currentUser);
-
         if (urlQuizCode) {
-            console.log('URL Quiz Code detected:', urlQuizCode);
             setQuizCode(urlQuizCode);
-            setShowQuizCodeInput(false); // Hide input form immediately
+            setShowQuizCodeInput(false);
             fetchQuiz(urlQuizCode);
         } else {
-            console.log('No URL Quiz Code, showing input form');
             setShowQuizCodeInput(true);
-            setQuizData(null); // Reset quiz data if no code in URL
+            setQuizData(null);
         }
     }, [urlQuizCode, currentUser?.id]);
 
     const fetchQuiz = async (code) => {
-        console.log('Fetching quiz for code:', code);
         setError('');
         setLoading(true);
         try {
@@ -307,28 +291,19 @@ function TakeQuizContent({ currentUser }) {
                 throw new Error('User not authenticated');
             }
 
-            // Check if the user has already attempted the quiz
             const attemptCheckResponse = await axios.get(
                 `${API_BASE_URL}/check-quiz-attempt/${code}/${currentUser.id}`
             );
-            console.log('Attempt check response:', attemptCheckResponse.data);
             if (attemptCheckResponse.data.hasAttempted) {
-                setError(attemptCheckResponse.data.message || 'You have already attempted this quiz.');
+                setError(attemptCheckResponse.data.message);
                 navigate(`/student-dashboard/quiz/${code}`);
                 return;
             }
 
-            // Fetch quiz data
             const response = await axios.get(`${API_BASE_URL}/quizzes/${code}`);
-            console.log('Quiz fetch response:', response.data);
-            if (response.status !== 200) {
-                throw new Error(`Failed to fetch quiz. Status: ${response.status}`);
-            }
-
             setQuizData(response.data);
             setShowQuizCodeInput(false);
         } catch (err) {
-            console.error('Error fetching quiz:', err);
             setError(err.message || 'An error occurred while fetching the quiz.');
             setQuizData(null);
             if (!urlQuizCode) setShowQuizCodeInput(true);
@@ -340,7 +315,6 @@ function TakeQuizContent({ currentUser }) {
     const handleQuizCodeSubmit = async (e) => {
         e.preventDefault();
         if (quizCode) {
-            console.log('Manual quiz code submitted:', quizCode);
             navigate(`/student-dashboard/take-quiz/${quizCode}`);
         }
     };
@@ -364,13 +338,11 @@ function TakeQuizContent({ currentUser }) {
                 user_id: currentUser.id,
                 answers: selectedAnswers,
             });
-            console.log('Quiz submission response:', response.data);
-            if (response.status !== 201) {
-                throw new Error(response.data.message || 'Failed to submit quiz.');
+
+            if (response.status === 201) {
+                navigate(`/student-dashboard/quiz/${quizCode}`);
             }
-            navigate(`/student-dashboard/quiz/${quizCode}`);
         } catch (error) {
-            console.error('Error submitting quiz:', error);
             setError(error.message || 'An error occurred while submitting the quiz');
         } finally {
             setLoading(false);
@@ -379,10 +351,8 @@ function TakeQuizContent({ currentUser }) {
 
     const renderQuiz = () => {
         if (!quizData || !quizData.questions?.questions) {
-            console.log('No quiz data or questions available:', quizData);
             return <p>No quiz data available.</p>;
         }
-        console.log('Rendering quiz with data:', quizData);
         return (
             <div className="quiz-container">
                 <h2 className="quiz-title">{quizData.quiz_name}</h2>
@@ -425,13 +395,6 @@ function TakeQuizContent({ currentUser }) {
         );
     };
 
-    console.log('Rendering TakeQuizContent with states:', {
-        showQuizCodeInput,
-        loading,
-        error,
-        quizData,
-    });
-
     return (
         <div className="content">
             <div className="take-quiz-content">
@@ -469,13 +432,14 @@ function ResultsContent({ currentUser }) {
     const [quizResult, setQuizResult] = useState(null);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [retestMessage, setRetestMessage] = useState('');
+    const [retestLoading, setRetestLoading] = useState(false);
     const { quizCode: urlQuizCode } = useParams();
 
-    // Reset quizResult when leaving the Results tab
     useEffect(() => {
         if (!urlQuizCode) {
-            setQuizResult(null); // Reset results when no quizCode in URL
-            setQuizCode(''); // Reset quiz code input
+            setQuizResult(null);
+            setQuizCode('');
         }
     }, [urlQuizCode]);
 
@@ -490,7 +454,6 @@ function ResultsContent({ currentUser }) {
                 }
                 setQuizResult(response.data);
             } catch (error) {
-                console.error('Error fetching quiz result:', error);
                 setError('An error occurred while fetching the quiz result.');
             } finally {
                 setLoading(false);
@@ -516,13 +479,35 @@ function ResultsContent({ currentUser }) {
                     }
                     setQuizResult(response.data);
                 } catch (error) {
-                    console.error('Error fetching quiz result:', error);
                     setError('An error occurred while fetching the quiz result.');
                 } finally {
                     setLoading(false);
                 }
             };
             fetchQuizResult();
+        }
+    };
+
+    const handleRequestRetest = async (quizCode, attemptId) => {
+        setRetestLoading(true);
+        setRetestMessage('');
+        try {
+            const quizQuery = await axios.get(`${API_BASE_URL}/quizzes/${quizCode}`);
+            const quizId = quizQuery.data.quiz_id;
+
+            const response = await axios.post(`${API_BASE_URL}/retest-requests`, {
+                student_id: currentUser.id,
+                quiz_id: quizId,
+                attempt_id: attemptId
+            });
+
+            if (response.status === 201) {
+                setRetestMessage('Retest request submitted successfully');
+            }
+        } catch (error) {
+            setRetestMessage(error.response?.data?.error || 'Failed to request retest');
+        } finally {
+            setRetestLoading(false);
         }
     };
 
@@ -564,6 +549,14 @@ function ResultsContent({ currentUser }) {
                         </div>
                     </div>
                 ))}
+                <button
+                    className="request-retest-btn"
+                    onClick={() => handleRequestRetest(quizCode, quizResult.attemptId)}
+                    disabled={retestLoading}
+                >
+                    {retestLoading ? 'Requesting...' : 'Request Retest'}
+                </button>
+                {retestMessage && <p className="retest-message">{retestMessage}</p>}
             </div>
         );
     };
@@ -634,7 +627,6 @@ function SettingsContent({ currentUser }) {
                 setMessage(response.data.message || 'Failed to change password');
             }
         } catch (error) {
-            console.error('Error changing password:', error);
             setMessage('An error occurred while changing the password');
         } finally {
             setLoading(false);

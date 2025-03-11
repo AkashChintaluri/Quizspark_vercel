@@ -21,15 +21,14 @@ body {
     line-height: 1.6;
 }
 
-/* Dashboard Layout */
-.student-dashboard {  /* ADDED SCOPING CLASS */
+.student-dashboard {
     display: flex;
     min-height: 100vh;
     width: 100%;
     background: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
 }
 
-.student-dashboard .sidebar { /* ADDED SCOPING CLASS */
+.student-dashboard .sidebar {
     width: 260px;
     background: linear-gradient(to bottom, #2c3e50, #34495e);
     color: #ecf0f1;
@@ -43,7 +42,6 @@ body {
     transition: width 0.3s ease;
 }
 
-/* Student Dashboard Header - Updated to Match Teacher Style */
 .student-dashboard .dashboard-header {
     display: flex;
     justify-content: space-between;
@@ -75,8 +73,7 @@ body {
     box-shadow: 0 4px 10px rgba(52, 152, 219, 0.5);
 }
 
-
-.student-dashboard .sidebar h2 { /* ADDED SCOPING CLASS */
+.student-dashboard .sidebar h2 {
     margin-bottom: 20px;
     font-size: 1.8em;
     font-weight: 600;
@@ -84,20 +81,20 @@ body {
     letter-spacing: 1px;
 }
 
-.student-dashboard .sidebar nav { /* ADDED SCOPING CLASS */
+.student-dashboard .sidebar nav {
     flex-grow: 1;
 }
 
-.student-dashboard .sidebar nav ul { /* ADDED SCOPING CLASS */
+.student-dashboard .sidebar nav ul {
     list-style-type: none;
     padding: 0;
 }
 
-.student-dashboard .sidebar nav ul li { /* ADDED SCOPING CLASS */
+.student-dashboard .sidebar nav ul li {
     margin-bottom: 10px;
 }
 
-.student-dashboard .sidebar nav ul li button { /* ADDED SCOPING CLASS */
+.student-dashboard .sidebar nav ul li button {
     width: 100%;
     padding: 10px 12px;
     text-align: left;
@@ -111,14 +108,13 @@ body {
     transition: all 0.3s ease;
 }
 
-.student-dashboard .sidebar nav ul li button:hover,  /* ADDED SCOPING CLASS */
-.student-dashboard .sidebar nav ul li button.active { /* ADDED SCOPING CLASS */
+.student-dashboard .sidebar nav ul li button:hover,
+.student-dashboard .sidebar nav ul li button.active {
     background-color: #3498db;
     transform: translateX(5px);
 }
 
-/* Content Area */
-.student-dashboard .content { /* ADDED SCOPING CLASS */
+.student-dashboard .content {
     margin-left: 260px;
     padding: 25px;
     background: linear-gradient(135deg, #f5f7fa 0%, #e4e7eb 100%);
@@ -130,15 +126,14 @@ body {
     box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
 }
 
-.student-dashboard .content h2 { /* ADDED SCOPING CLASS */
+.student-dashboard .content h2 {
     margin-bottom: 15px;
     color: #2c3e50;
     font-size: 28px;
     font-weight: 600;
 }
 
-/* Welcome Box */
-.student-dashboard .welcome-box { /* ADDED SCOPING CLASS */
+.student-dashboard .welcome-box {
     background: linear-gradient(90deg, #3498db 0%, #2980b9 100%);
     color: #fff;
     padding: 12px;
@@ -150,15 +145,13 @@ body {
     animation: fadeIn 0.5s ease-in;
 }
 
-/* Home Content Styles */
-.student-dashboard .home-content { /* ADDED SCOPING CLASS */
+.student-dashboard .home-content {
     display: flex;
     flex-direction: column;
     gap: 25px;
 }
 
-/* Stats Section */
-.student-dashboard .stats-section { /* ADDED SCOPING CLASS */
+.student-dashboard .stats-section {
     background: #ffffff;
     padding: 20px;
     border-radius: 12px;
@@ -169,28 +162,26 @@ body {
     margin-top: -20px;
 }
 
-.student-dashboard .stats-section:hover { /* ADDED SCOPING CLASS */
+.student-dashboard .stats-section:hover {
     transform: translateY(-5px);
 }
 
-.student-dashboard .stats-section h3 { /* ADDED SCOPING CLASS */
+.student-dashboard .stats-section h3 {
     color: #2c3e50;
     margin-bottom: 15px;
     font-size: 22px;
     font-weight: 600;
 }
 
-/* Stats Grid */
-.student-dashboard .stats-grid { /* ADDED SCOPING CLASS */
-    display: flex; /* Use flexbox to distribute items evenly */
-    justify-content: space-between; /* Distribute items evenly */
+.student-dashboard .stats-grid {
+    display: flex;
+    justify-content: space-between;
     gap: 15px;
     margin-top: 15px;
     width: 100%;
 }
 
-/* Stat Card */
-.student-dashboard .stat-card { /* ADDED SCOPING CLASS */
+.student-dashboard .stat-card {
     background: linear-gradient(90deg, #3498db 0%, #2980b9 100%);
     padding: 15px;
     border-radius: 10px;
@@ -202,17 +193,16 @@ body {
     align-items: center;
     color: #fff;
     box-sizing: border-box;
-    width: calc(33.33% - 10px); /* Set a uniform width for each stat card */
+    width: calc(33.33% - 10px);
     min-height: 0;
 }
 
-.student-dashboard .stat-card:hover { /* ADDED SCOPING CLASS */
+.student-dashboard .stat-card:hover {
     transform: scale(1.05);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
 }
 
-/* Stat Card Text */
-.student-dashboard .stat-card h4 { /* ADDED SCOPING CLASS */
+.student-dashboard .stat-card h4 {
     margin: 0 0 8px 0;
     font-size: 1.1em;
     font-weight: 500;
@@ -224,7 +214,7 @@ body {
     padding: 0 5px;
 }
 
-.student-dashboard .stat-card p { /* ADDED SCOPING CLASS */
+.student-dashboard .stat-card p {
     margin: 0;
     font-size: 1.6em;
     font-weight: bold;
@@ -235,9 +225,8 @@ body {
     padding: 0 5px;
 }
 
-/* Upcoming and Attempted Quizzes Containers */
-.student-dashboard .upcoming-quizzes,  /* ADDED SCOPING CLASS */
-.student-dashboard .attempted-quizzes { /* ADDED SCOPING CLASS */
+.student-dashboard .upcoming-quizzes,
+.student-dashboard .attempted-quizzes {
     margin-top: 15px;
     background: #ffffff;
     padding: 20px;
@@ -246,30 +235,28 @@ body {
     transition: transform 0.3s ease;
 }
 
-.student-dashboard .upcoming-quizzes:hover,  /* ADDED SCOPING CLASS */
-.student-dashboard .attempted-quizzes:hover { /* ADDED SCOPING CLASS */
+.student-dashboard .upcoming-quizzes:hover,
+.student-dashboard .attempted-quizzes:hover {
     transform: translateY(-5px);
 }
 
-.student-dashboard .upcoming-quizzes h3,  /* ADDED SCOPING CLASS */
-.student-dashboard .attempted-quizzes h3 { /* ADDED SCOPING CLASS */
+.student-dashboard .upcoming-quizzes h3,
+.student-dashboard .attempted-quizzes h3 {
     color: #2c3e50;
     margin-bottom: 15px;
     font-size: 22px;
     font-weight: 600;
 }
 
-/* Quiz Lists */
-.student-dashboard .upcoming-quizzes .quiz-list,  /* ADDED SCOPING CLASS */
-.student-dashboard .attempted-quizzes .quiz-list { /* ADDED SCOPING CLASS */
+.student-dashboard .upcoming-quizzes .quiz-list,
+.student-dashboard .attempted-quizzes .quiz-list {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 15px;
     margin-top: 15px;
 }
 
-/* Quiz Cards */
-.student-dashboard .quiz-card { /* ADDED SCOPING CLASS */
+.student-dashboard .quiz-card {
     padding: 15px;
     background: #ffffff;
     border-radius: 10px;
@@ -278,49 +265,48 @@ body {
     border: 1px solid transparent;
 }
 
-.student-dashboard .quiz-card:hover { /* ADDED SCOPING CLASS */
+.student-dashboard .quiz-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
     border: 1px solid #3498db;
 }
 
-.student-dashboard .quiz-card h4 { /* ADDED SCOPING CLASS */
+.student-dashboard .quiz-card h4 {
     margin: 0 0 8px 0;
     color: #34495e;
     font-size: 18px;
     font-weight: 500;
 }
 
-.student-dashboard .quiz-card p { /* ADDED SCOPING CLASS */
+.student-dashboard .quiz-card p {
     margin: 4px 0;
     color: #7f8c8d;
     font-size: 14px;
 }
 
-.student-dashboard .quiz-card.clickable { /* ADDED SCOPING CLASS */
+.student-dashboard .quiz-card.clickable {
     cursor: pointer;
     transition: background-color 0.2s;
 }
 
-.student-dashboard .quiz-card.clickable:hover { /* ADDED SCOPING CLASS */
+.student-dashboard .quiz-card.clickable:hover {
     background-color: #f0f0f0;
 }
 
-/* Take Quiz Content Styles */
-.student-dashboard .take-quiz-content { /* ADDED SCOPING CLASS */
+.student-dashboard .take-quiz-content {
     background: #ffffff;
     padding: 20px;
     border-radius: 12px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
 
-.student-dashboard .quiz-code-section form { /* ADDED SCOPING CLASS */
+.student-dashboard .quiz-code-section form {
     display: flex;
     gap: 10px;
     margin-bottom: 15px;
 }
 
-.student-dashboard .quiz-code-input { /* ADDED SCOPING CLASS */
+.student-dashboard .quiz-code-input {
     flex-grow: 1;
     padding: 10px;
     border: 1px solid #bdc3c7;
@@ -329,12 +315,12 @@ body {
     transition: border-color 0.3s ease;
 }
 
-.student-dashboard .quiz-code-input:focus { /* ADDED SCOPING CLASS */
+.student-dashboard .quiz-code-input:focus {
     border-color: #3498db;
     outline: none;
 }
 
-.student-dashboard .start-quiz-btn { /* ADDED SCOPING CLASS */
+.student-dashboard .start-quiz-btn {
     padding: 10px 20px;
     background: #3498db;
     color: #fff;
@@ -346,17 +332,17 @@ body {
     box-shadow: 0 2px 5px rgba(52, 152, 219, 0.3);
 }
 
-.student-dashboard .start-quiz-btn:hover { /* ADDED SCOPING CLASS */
+.student-dashboard .start-quiz-btn:hover {
     background: #2980b9;
     transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(52, 152, 219, 0.5);
 }
 
-.student-dashboard .quiz-container { /* ADDED SCOPING CLASS */
+.student-dashboard .quiz-container {
     margin-top: 15px;
 }
 
-.student-dashboard .question-card { /* ADDED SCOPING CLASS */
+.student-dashboard .question-card {
     background: #ffffff;
     padding: 15px;
     border-radius: 10px;
@@ -364,14 +350,14 @@ body {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.student-dashboard .options-container { /* ADDED SCOPING CLASS */
+.student-dashboard .options-container {
     display: flex;
     flex-direction: column;
     gap: 8px;
     margin-top: 10px;
 }
 
-.student-dashboard .option-item label { /* ADDED SCOPING CLASS */
+.student-dashboard .option-item label {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -381,11 +367,11 @@ body {
     transition: background-color 0.3s ease;
 }
 
-.student-dashboard .option-item label:hover { /* ADDED SCOPING CLASS */
+.student-dashboard .option-item label:hover {
     background-color: #e9ecef;
 }
 
-.student-dashboard .submit-quiz-btn { /* ADDED SCOPING CLASS */
+.student-dashboard .submit-quiz-btn {
     margin-top: 15px;
     padding: 10px 20px;
     background: #2ecc71;
@@ -398,23 +384,22 @@ body {
     box-shadow: 0 2px 5px rgba(46, 204, 113, 0.3);
 }
 
-.student-dashboard .submit-quiz-btn:hover { /* ADDED SCOPING CLASS */
+.student-dashboard .submit-quiz-btn:hover {
     background: #27ae60;
     transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(46, 204, 113, 0.5);
 }
 
-/* Results Content Styles */
-.student-dashboard .results-form-container { /* ADDED SCOPING CLASS */
+.student-dashboard .results-form-container {
     margin-bottom: 15px;
 }
 
-.student-dashboard .results-form-container form { /* ADDED SCOPING CLASS */
+.student-dashboard .results-form-container form {
     display: flex;
     gap: 10px;
 }
 
-.student-dashboard .view-results-btn { /* ADDED SCOPING CLASS */
+.student-dashboard .view-results-btn {
     padding: 10px 20px;
     background: #3498db;
     color: #fff;
@@ -426,46 +411,71 @@ body {
     box-shadow: 0 2px 5px rgba(52, 152, 219, 0.3);
 }
 
-.student-dashboard .view-results-btn:hover { /* ADDED SCOPING CLASS */
+.student-dashboard .view-results-btn:hover {
     background: #2980b9;
     transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(52, 152, 219, 0.5);
 }
 
-.student-dashboard .quiz-result { /* ADDED SCOPING CLASS */
+.student-dashboard .quiz-result {
     background: #ffffff;
     padding: 20px;
     border-radius: 12px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 }
 
-.student-dashboard .final-score { /* ADDED SCOPING CLASS */
+.student-dashboard .final-score {
     font-size: 1.4em;
     font-weight: 600;
     margin-bottom: 15px;
     color: #2c3e50;
 }
 
-.student-dashboard .option-item.correct { /* ADDED SCOPING CLASS */
+.student-dashboard .option-item.correct {
     background-color: #d4edda;
     border: 1px solid #c3e6cb;
     color: #155724;
 }
 
-.student-dashboard .option-item.incorrect { /* ADDED SCOPING CLASS */
+.student-dashboard .option-item.incorrect {
     background-color: #f8d7da;
     border: 1px solid #f5c6cb;
     color: #721c24;
 }
 
-/* Settings Styles */
-.student-dashboard .settings-options { /* ADDED SCOPING CLASS */
+.student-dashboard .request-retest-btn {
+    margin-top: 15px;
+    padding: 10px 20px;
+    background: #f39c12;
+    color: #fff;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.student-dashboard .request-retest-btn:hover {
+    background: #e67e22;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(243, 156, 18, 0.3);
+}
+
+.student-dashboard .retest-message {
+    margin-top: 10px;
+    padding: 8px;
+    border-radius: 6px;
+    background: #e8f0fe;
+    color: #2c3e50;
+}
+
+.student-dashboard .settings-options {
     display: flex;
     flex-direction: column;
     gap: 15px;
 }
 
-.student-dashboard .settings-button { /* ADDED SCOPING CLASS */
+.student-dashboard .settings-button {
     padding: 10px 20px;
     font-size: 16px;
     cursor: pointer;
@@ -476,36 +486,36 @@ body {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.student-dashboard .logout { /* ADDED SCOPING CLASS */
+.student-dashboard .logout {
     background: #e74c3c;
     color: #fff;
 }
 
-.student-dashboard .logout:hover { /* ADDED SCOPING CLASS */
+.student-dashboard .logout:hover {
     background: #c0392b;
     transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);
 }
 
-.student-dashboard .change-password { /* ADDED SCOPING CLASS */
+.student-dashboard .change-password {
     background: #3498db;
     color: #fff;
 }
 
-.student-dashboard .change-password:hover { /* ADDED SCOPING CLASS */
+.student-dashboard .change-password:hover {
     background: #2980b9;
     transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(52, 152, 219, 0.3);
 }
 
-.student-dashboard .password-change-fields { /* ADDED SCOPING CLASS */
+.student-dashboard .password-change-fields {
     display: flex;
     flex-direction: column;
     gap: 10px;
     margin-top: 15px;
 }
 
-.student-dashboard .password-change-fields input { /* ADDED SCOPING CLASS */
+.student-dashboard .password-change-fields input {
     padding: 10px;
     font-size: 16px;
     border: 1px solid #bdc3c7;
@@ -513,12 +523,12 @@ body {
     transition: border-color 0.3s ease;
 }
 
-.student-dashboard .password-change-fields input:focus { /* ADDED SCOPING CLASS */
+.student-dashboard .password-change-fields input:focus {
     border-color: #3498db;
     outline: none;
 }
 
-.student-dashboard .password-change-fields button { /* ADDED SCOPING CLASS */
+.student-dashboard .password-change-fields button {
     padding: 10px 20px;
     font-size: 16px;
     cursor: pointer;
@@ -531,13 +541,13 @@ body {
     box-shadow: 0 2px 5px rgba(46, 204, 113, 0.3);
 }
 
-.student-dashboard .password-change-fields button:hover { /* ADDED SCOPING CLASS */
+.student-dashboard .password-change-fields button:hover {
     background: #27ae60;
     transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(46, 204, 113, 0.5);
 }
 
-.student-dashboard .message { /* ADDED SCOPING CLASS */
+.student-dashboard .message {
     margin-top: 15px;
     padding: 10px;
     border-radius: 8px;
@@ -547,8 +557,7 @@ body {
     text-align: center;
 }
 
-/* Error Message */
-.student-dashboard .error-message { /* ADDED SCOPING CLASS */
+.student-dashboard .error-message {
     color: #e74c3c;
     padding: 10px;
     background: #fff6f6;
@@ -559,71 +568,69 @@ body {
     text-align: center;
 }
 
-/* Animations */
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
-    .student-dashboard .sidebar { /* ADDED SCOPING CLASS */
+    .student-dashboard .sidebar {
         width: 220px;
     }
 
-    .student-dashboard .content { /* ADDED SCOPING CLASS */
+    .student-dashboard .content {
         margin-left: 220px;
         width: calc(100% - 220px);
         padding: 15px;
     }
 
-    .student-dashboard .stats-grid { /* ADDED SCOPING CLASS */
-        grid-template-columns: repeat(3, 1fr); /* Keep 3 columns */
+    .student-dashboard .stats-grid {
+        grid-template-columns: repeat(3, 1fr);
     }
 
-    .student-dashboard .upcoming-quizzes .quiz-list, /* ADDED SCOPING CLASS */
-    .student-dashboard .attempted-quizzes .quiz-list { /* ADDED SCOPING CLASS */
+    .student-dashboard .upcoming-quizzes .quiz-list,
+    .student-dashboard .attempted-quizzes .quiz-list {
         grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     }
 }
 
 @media (max-width: 480px) {
-    .student-dashboard {  /* ADDED SCOPING CLASS */
+    .student-dashboard {
         flex-direction: column;
     }
 
-    .student-dashboard .sidebar { /* ADDED SCOPING CLASS */
+    .student-dashboard .sidebar {
         width: 100%;
         height: auto;
         position: relative;
         padding: 15px;
     }
 
-    .student-dashboard .sidebar nav ul li button { /* ADDED SCOPING CLASS */
+    .student-dashboard .sidebar nav ul li button {
         padding: 8px;
     }
 
-    .student-dashboard .content { /* ADDED SCOPING CLASS */
+    .student-dashboard .content {
         margin-left: 0;
         width: 100%;
         padding: 10px;
         border-radius: 0;
     }
 
-    .student-dashboard .stats-grid { /* ADDED SCOPING CLASS */
-        grid-template-columns: 1fr; /* Stack vertically on very small screens */
-    }
-
-    .student-dashboard .stat-card { /* ADDED SCOPING CLASS */
-        min-height: 80px;
-    }
-
-    .student-dashboard .upcoming-quizzes .quiz-list, /* ADDED SCOPING CLASS */
-    .student-dashboard .attempted-quizzes .quiz-list { /* ADDED SCOPING CLASS */
+    .student-dashboard .stats-grid {
         grid-template-columns: 1fr;
     }
 
-    .student-dashboard .welcome-box { /* ADDED SCOPING CLASS */
+    .student-dashboard .stat-card {
+        min-height: 80px;
+    }
+
+    .student-dashboard .upcoming-quizzes .quiz-list,
+    .student-dashboard .attempted-quizzes .quiz-list {
+        grid-template-columns: 1fr;
+    }
+
+    .student-dashboard .welcome-box {
         font-size: 0.9em;
     }
 }

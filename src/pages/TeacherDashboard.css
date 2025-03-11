@@ -76,12 +76,27 @@ body {
     font-weight: 500;
     border-radius: 6px;
     transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 .teacher-dashboard .sidebar nav ul li button:hover,
 .teacher-dashboard .sidebar nav ul li button.active {
     background-color: #3498db;
     transform: translateX(5px);
+}
+
+/* Notification Badge */
+.teacher-dashboard .notification-badge {
+    background: #e74c3c;
+    color: #fff;
+    border-radius: 50%;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 20px;
+    text-align: center;
 }
 
 /* Welcome Box */
@@ -132,7 +147,6 @@ body {
     height: 1px;
     background: linear-gradient(90deg, transparent 0%, rgba(175, 175, 175, 0.3) 50%, transparent 100%);
 }
-
 
 /* Dashboard Header */
 .teacher-dashboard .dashboard-header {
@@ -548,6 +562,40 @@ body {
     box-shadow: 0 4px 10px rgba(231, 76, 60, 0.5);
 }
 
+/* Notifications Section */
+.teacher-dashboard .notifications-list {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.teacher-dashboard .notification-item {
+    background: #ffffff;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.teacher-dashboard .notification-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+    border: 1px solid #3498db;
+}
+
+.teacher-dashboard .notification-item p {
+    margin: 5px 0;
+    color: #34495e;
+    font-size: 14px;
+}
+
+.teacher-dashboard .notification-item p strong {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .teacher-dashboard .sidebar {
@@ -710,13 +758,6 @@ body {
     margin-bottom: 20px;
 }
 
-.teacher-dashboard .section-title {
-    color: #2c3e50;
-    font-size: 22px;
-    font-weight: 600;
-    margin-bottom: 15px;
-}
-
 .teacher-dashboard .settings-options {
     display: flex;
     flex-direction: column;
@@ -765,13 +806,6 @@ body {
     display: flex;
     flex-direction: column;
     gap: 15px;
-}
-
-.teacher-dashboard .form-group label {
-    display: block;
-    color: #34495e;
-    font-weight: 500;
-    margin-bottom: 5px;
 }
 
 .teacher-dashboard .quiz-name-input {

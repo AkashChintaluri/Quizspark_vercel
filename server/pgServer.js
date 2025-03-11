@@ -137,7 +137,6 @@ function startServer() {
         try {
             const studentIdInt = parseInt(student_id, 10);
             if (isNaN(studentIdInt)) {
-                console.error(`Invalid student_id: ${student_id} is not a number`);
                 return res.status(400).json({ error: 'Invalid student_id: must be a number' });
             }
 
@@ -147,21 +146,11 @@ function startServer() {
                 INNER JOIN subscriptions s ON t.id = s.teacher_id
                 WHERE s.student_id = $1;
             `;
-            console.log('Executing subscriptions query:', query, 'with student_id:', studentIdInt);
             const result = await pool.query(query, [studentIdInt]);
-            console.log('Subscriptions query result:', result.rows);
             res.json(result.rows);
         } catch (error) {
-            console.error('Error fetching subscriptions:', {
-                message: error.message,
-                stack: error.stack,
-                code: error.code,
-                detail: error.detail
-            });
-            res.status(500).json({
-                error: 'Failed to fetch subscriptions',
-                details: error.message
-            });
+            console.error('Error fetching subscriptions:', error);
+            res.status(500).json({ error: 'Failed to fetch subscriptions' });
         }
     });
 
@@ -178,18 +167,13 @@ function startServer() {
             const result = await pool.query(query, values);
             const quizId = result.rows[0].quiz_id;
 
-            console.log('Quiz created with ID:', quizId);
             res.status(201).json({
                 message: 'Quiz created successfully',
                 quizId: quizId
             });
         } catch (error) {
             console.error('Error creating quiz:', error);
-            res.status(500).json({
-                message: 'Failed to create quiz',
-                error: error.message,
-                stack: error.stack
-            });
+            res.status(500).json({ message: 'Failed to create quiz', error: error.message });
         }
     });
 
@@ -214,11 +198,7 @@ function startServer() {
             res.status(200).json({ message: 'Quiz updated successfully' });
         } catch (error) {
             console.error('Error updating quiz:', error);
-            res.status(500).json({
-                message: 'Failed to update quiz',
-                error: error.message,
-                stack: error.stack
-            });
+            res.status(500).json({ message: 'Failed to update quiz', error: error.message });
         }
     });
 
@@ -227,31 +207,25 @@ function startServer() {
 
         try {
             const query = `
-                SELECT quiz_name, questions
+                SELECT quiz_id, quiz_name, questions
                 FROM quizzes
                 WHERE quiz_code = $1;
             `;
-            const values = [quiz_code];
-            console.log("Executing query:", query, "with values:", values);
-            const result = await pool.query(query, values);
+            const result = await pool.query(query, [quiz_code]);
 
             if (result.rows.length === 0) {
-                console.log(`Quiz with code ${quiz_code} not found`);
                 return res.status(404).json({ message: 'Quiz not found' });
             }
 
             const quiz = result.rows[0];
             res.status(200).json({
+                quiz_id: quiz.quiz_id,
                 quiz_name: quiz.quiz_name,
                 questions: quiz.questions
             });
         } catch (error) {
             console.error('Error fetching quiz:', error);
-            res.status(500).json({
-                message: 'Failed to fetch quiz',
-                error: error.message,
-                stack: error.stack
-            });
+            res.status(500).json({ message: 'Failed to fetch quiz', error: error.message });
         }
     });
 
@@ -259,10 +233,10 @@ function startServer() {
         const { quiz_code, user_id, answers } = req.body;
         try {
             const quizQuery = `
-            SELECT quiz_id, questions
-            FROM quizzes
-            WHERE quiz_code = $1;
-        `;
+                SELECT quiz_id, questions
+                FROM quizzes
+                WHERE quiz_code = $1;
+            `;
             const quizResult = await pool.query(quizQuery, [quiz_code]);
             if (quizResult.rows.length === 0) {
                 return res.status(404).json({ message: 'Quiz not found' });
@@ -283,10 +257,10 @@ function startServer() {
             });
 
             const insertQuery = `
-            INSERT INTO quiz_attempts (quiz_id, user_id, score, total_questions, answers)
-            VALUES ($1, $2, $3, $4, $5)
-            RETURNING attempt_id;
-        `;
+                INSERT INTO quiz_attempts (quiz_id, user_id, score, total_questions, answers)
+                VALUES ($1, $2, $3, $4, $5)
+                RETURNING attempt_id;
+            `;
             const insertValues = [quiz.quiz_id, user_id, score, totalQuestions, JSON.stringify(answers)];
             const insertResult = await pool.query(insertQuery, insertValues);
 
@@ -304,10 +278,12 @@ function startServer() {
 
         try {
             const quizQuery = `
-                SELECT q.quiz_id, q.quiz_name, q.questions, qa.answers, qa.score, qa.total_questions
+                SELECT q.quiz_id, q.quiz_name, q.questions, qa.attempt_id, qa.answers, qa.score, qa.total_questions
                 FROM quizzes q
                 LEFT JOIN quiz_attempts qa ON q.quiz_id = qa.quiz_id AND qa.user_id = $2
-                WHERE q.quiz_code = $1;
+                WHERE q.quiz_code = $1
+                ORDER BY qa.attempt_date DESC
+                LIMIT 1;
             `;
             const quizResult = await pool.query(quizQuery, [quiz_code, user_id]);
 
@@ -320,19 +296,12 @@ function startServer() {
 
             let userAnswers = {};
             if (quizData.answers) {
-                if (typeof quizData.answers === 'string') {
-                    try {
-                        userAnswers = JSON.parse(quizData.answers);
-                    } catch (error) {
-                        console.error('Error parsing answers:', error);
-                    }
-                } else if (typeof quizData.answers === 'object') {
-                    userAnswers = quizData.answers;
-                }
+                userAnswers = typeof quizData.answers === 'string' ? JSON.parse(quizData.answers) : quizData.answers;
             }
 
             const quizResults = {
                 quizName: quizData.quiz_name,
+                attemptId: quizData.attempt_id,
                 score: quizData.score || 0,
                 totalQuestions: quizData.total_questions || questions.length,
                 questions: questions.map((question, index) => {
@@ -354,10 +323,7 @@ function startServer() {
             res.json(quizResults);
         } catch (error) {
             console.error('Error fetching quiz result:', error);
-            res.status(500).json({
-                message: 'Failed to fetch quiz result',
-                error: error.message
-            });
+            res.status(500).json({ message: 'Failed to fetch quiz result', error: error.message });
         }
     });
 
@@ -374,23 +340,30 @@ function startServer() {
 
             const quizId = quizResult.rows[0].quiz_id;
 
-            const attemptQuery = 'SELECT * FROM quiz_attempts WHERE quiz_id = $1 AND user_id = $2';
+            const attemptQuery = `
+                SELECT qa.*, rr.status 
+                FROM quiz_attempts qa
+                LEFT JOIN retest_requests rr ON qa.attempt_id = rr.attempt_id
+                WHERE qa.quiz_id = $1 AND qa.user_id = $2
+                ORDER BY qa.attempt_date DESC
+                LIMIT 1
+            `;
             const attemptResult = await pool.query(attemptQuery, [quizId, userId]);
 
             if (attemptResult.rows.length > 0) {
+                const latestAttempt = attemptResult.rows[0];
+                const canRetake = latestAttempt.status === 'approved';
                 res.json({
-                    hasAttempted: true,
-                    message: 'You have already attempted this quiz.'
+                    hasAttempted: !canRetake,
+                    message: canRetake ? 'Retest approved' : 'You have already attempted this quiz.',
+                    attemptId: latestAttempt.attempt_id
                 });
             } else {
                 res.json({ hasAttempted: false });
             }
         } catch (error) {
             console.error('Error checking quiz attempt:', error);
-            res.status(500).json({
-                message: 'Error checking quiz attempt',
-                error: error.message
-            });
+            res.status(500).json({ message: 'Error checking quiz attempt', error: error.message });
         }
     });
 
@@ -417,15 +390,14 @@ function startServer() {
         const { user_id } = req.params;
         try {
             const query = `
-            SELECT 
-                COUNT(*) as total_attempts,
-                COALESCE(AVG(CAST(score AS FLOAT) / total_questions * 100), 0) as average_score,
-                COUNT(DISTINCT quiz_id) as completed_quizzes
-            FROM quiz_attempts
-            WHERE user_id = $1;
-        `;
+                SELECT 
+                    COUNT(*) as total_attempts,
+                    COALESCE(AVG(CAST(score AS FLOAT) / total_questions * 100), 0) as average_score,
+                    COUNT(DISTINCT quiz_id) as completed_quizzes
+                FROM quiz_attempts
+                WHERE user_id = $1;
+            `;
             const result = await pool.query(query, [user_id]);
-            console.log('User stats response:', result.rows[0]);
             res.json(result.rows[0]);
         } catch (error) {
             console.error('Error fetching user stats:', error);
@@ -508,14 +480,13 @@ function startServer() {
         const { user_id } = req.params;
         try {
             const query = `
-            SELECT DISTINCT q.quiz_id, q.quiz_name, q.quiz_code, t.username AS teacher_name, q.due_date
-            FROM quiz_attempts qa
-            JOIN quizzes q ON qa.quiz_id = q.quiz_id
-            JOIN teacher_login t ON q.created_by = t.id
-            WHERE qa.user_id = $1;
-        `;
+                SELECT DISTINCT q.quiz_id, q.quiz_name, q.quiz_code, t.username AS teacher_name, q.due_date
+                FROM quiz_attempts qa
+                JOIN quizzes q ON qa.quiz_id = q.quiz_id
+                JOIN teacher_login t ON q.created_by = t.id
+                WHERE qa.user_id = $1;
+            `;
             const result = await pool.query(query, [user_id]);
-            console.log('Attempted quizzes for user_id:', user_id, 'Result:', result.rows);
             res.json(result.rows);
         } catch (error) {
             console.error('Error fetching attempted quizzes:', error);
@@ -527,20 +498,16 @@ function startServer() {
         const { user_id } = req.params;
         try {
             const query = `
-            SELECT quiz_id, quiz_name, quiz_code, questions, due_date, created_at
-            FROM quizzes
-            WHERE created_by = $1
-            ORDER BY created_at DESC
-        `;
+                SELECT quiz_id, quiz_name, quiz_code, questions, due_date, created_at
+                FROM quizzes
+                WHERE created_by = $1
+                ORDER BY created_at DESC
+            `;
             const result = await pool.query(query, [user_id]);
-
             res.json(result.rows);
         } catch (error) {
             console.error('Error fetching created quizzes:', error);
-            res.status(500).json({
-                error: 'Failed to fetch created quizzes',
-                details: error.message
-            });
+            res.status(500).json({ error: 'Failed to fetch created quizzes' });
         }
     });
 
@@ -549,20 +516,23 @@ function startServer() {
 
         try {
             const query = `
-            SELECT 
-                qa.attempt_id,
-                qa.user_id,
-                s.username AS student_username,
-                qa.score,
-                qa.total_questions,
-                qa.attempt_date,
-                q.quiz_name
-            FROM quiz_attempts qa
-            JOIN quizzes q ON qa.quiz_id = q.quiz_id
-            JOIN student_login s ON qa.user_id = s.id
-            WHERE q.quiz_code = $1
-            ORDER BY qa.attempt_date DESC;
-        `;
+                SELECT 
+                    qa.attempt_id,
+                    qa.user_id,
+                    s.username AS student_username,
+                    qa.score,
+                    qa.total_questions,
+                    qa.attempt_date,
+                    q.quiz_name,
+                    rr.request_id,
+                    rr.status AS retest_status
+                FROM quiz_attempts qa
+                JOIN quizzes q ON qa.quiz_id = q.quiz_id
+                JOIN student_login s ON qa.user_id = s.id
+                LEFT JOIN retest_requests rr ON qa.attempt_id = rr.attempt_id
+                WHERE q.quiz_code = $1
+                ORDER BY qa.attempt_date DESC;
+            `;
             const result = await pool.query(query, [quiz_code]);
 
             if (result.rows.length === 0) {
@@ -572,7 +542,7 @@ function startServer() {
             res.json(result.rows);
         } catch (error) {
             console.error('Error fetching quiz attempts:', error);
-            res.status(500).json({ error: 'Failed to fetch quiz attempts', details: error.message });
+            res.status(500).json({ error: 'Failed to fetch quiz attempts' });
         }
     });
 
@@ -582,54 +552,93 @@ function startServer() {
             const { student_id, quiz_id, attempt_id } = req.body;
             const result = await pool.query(
                 `INSERT INTO retest_requests 
-       (student_id, quiz_id, attempt_id) 
-       VALUES ($1, $2, $3) 
-       RETURNING *`,
+                 (student_id, quiz_id, attempt_id) 
+                 VALUES ($1, $2, $3) 
+                 RETURNING *`,
                 [student_id, quiz_id, attempt_id]
             );
             res.status(201).json(result.rows[0]);
         } catch (error) {
-            console.error(error);
-            res.status(500).json({ error: 'Server error' });
+            console.error('Error creating retest request:', error);
+            res.status(500).json({ error: 'Failed to create retest request' });
         }
     });
 
     app.get('/api/retest-requests/teacher/:teacher_id', async (req, res) => {
         try {
             const { teacher_id } = req.params;
-            const result = await pool.query(
-                `SELECT r.*, s.username as student_name, q.title as quiz_title
-       FROM retest_requests r
-       JOIN students s ON r.student_id = s.id
-       JOIN quizzes q ON r.quiz_id = q.id
-       WHERE q.teacher_id = $1 AND r.status = 'pending'`,
-                [teacher_id]
-            );
+            const query = `
+                SELECT 
+                    rr.request_id,
+                    rr.student_id,
+                    sl.username AS student_name,
+                    q.quiz_id,
+                    q.quiz_name,
+                    q.quiz_code,
+                    rr.attempt_id,
+                    rr.request_date,
+                    rr.status
+                FROM retest_requests rr
+                JOIN student_login sl ON rr.student_id = sl.id
+                JOIN quizzes q ON rr.quiz_id = q.quiz_id
+                WHERE q.created_by = $1
+                ORDER BY rr.request_date DESC
+            `;
+            const result = await pool.query(query, [teacher_id]);
             res.json(result.rows);
         } catch (error) {
-            console.error(error);
-            res.status(500).json({ error: 'Server error' });
+            console.error('Error fetching retest requests:', error);
+            res.status(500).json({ error: 'Failed to fetch retest requests' });
         }
     });
 
-    app.put('/api/retest-requests/:id', async (req, res) => {
+    app.put('/api/retest-requests/:request_id', async (req, res) => {
         try {
-            const { id } = req.params;
-            const { status } = req.body;
-            const result = await pool.query(
-                `UPDATE retest_requests 
-       SET status = $1 
-       WHERE id = $2 
-       RETURNING *`,
-                [status, id]
-            );
+            const { request_id } = req.params;
+            const { status, teacher_password } = req.body;
+
+            // Verify teacher password
+            const teacherQuery = `
+                SELECT t.password 
+                FROM quizzes q
+                JOIN teacher_login t ON q.created_by = t.id
+                JOIN retest_requests rr ON q.quiz_id = rr.quiz_id
+                WHERE rr.request_id = $1
+            `;
+            const teacherResult = await pool.query(teacherQuery, [request_id]);
+
+            if (teacherResult.rows.length === 0 || teacherResult.rows[0].password !== teacher_password) {
+                return res.status(401).json({ error: 'Invalid teacher password' });
+            }
+
+            // Update retest request status
+            const updateQuery = `
+                UPDATE retest_requests 
+                SET status = $1,
+                    updated_at = NOW()
+                WHERE request_id = $2
+                RETURNING *
+            `;
+            const result = await pool.query(updateQuery, [status, request_id]);
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: 'Retest request not found' });
+            }
+
+            // If approved, delete the previous attempt
+            if (status === 'approved') {
+                await pool.query(`
+                    DELETE FROM quiz_attempts 
+                    WHERE attempt_id = $1
+                `, [result.rows[0].attempt_id]);
+            }
+
             res.json(result.rows[0]);
         } catch (error) {
-            console.error(error);
-            res.status(500).json({ error: 'Server error' });
+            console.error('Error updating retest request:', error);
+            res.status(500).json({ error: 'Failed to update retest request' });
         }
     });
-
 
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

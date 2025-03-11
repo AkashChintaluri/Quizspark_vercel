@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom'; // Added useLocation
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import './TeacherDashboard.css';
 import './MakeQuizzes.css';
@@ -12,17 +12,16 @@ function TeacherDashboard() {
     const [activeTab, setActiveTab] = useState('home');
     const [currentUser, setCurrentUser] = useState(null);
     const navigate = useNavigate();
-    const location = useLocation(); // Added to access navigation state
+    const location = useLocation();
 
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
         if (!storedUser) {
-            navigate('/'); // Redirect to login if not authenticated
+            navigate('/');
         } else {
             setCurrentUser(JSON.parse(storedUser));
         }
 
-        // Switch to results tab if navigated with a quiz code
         if (location.state?.quizCode) {
             setActiveTab('results');
         }
@@ -37,6 +36,23 @@ function TeacherDashboard() {
 }
 
 function Sidebar({ activeTab, setActiveTab, currentUser }) {
+    const [notificationsCount, setNotificationsCount] = useState(0);
+
+    useEffect(() => {
+        const fetchNotificationsCount = async () => {
+            if (!currentUser?.id) return;
+            try {
+                const response = await axios.get(`http://localhost:3000/api/retest-requests/teacher/${currentUser.id}`);
+                const unreadCount = response.data.filter(r => r.status === 'pending').length;
+                setNotificationsCount(unreadCount);
+            } catch (error) {
+                console.error('Error fetching notifications count:', error);
+            }
+        };
+
+        fetchNotificationsCount();
+    }, [currentUser]);
+
     return (
         <div className="sidebar">
             <h2>Teacher Dashboard</h2>
@@ -48,13 +64,16 @@ function Sidebar({ activeTab, setActiveTab, currentUser }) {
 
             <nav>
                 <ul>
-                    {['Home', 'Make Quizzes', 'Results', 'Settings'].map((tab) => (
+                    {['Home', 'Make Quizzes', 'Results', 'Notifications', 'Settings'].map((tab) => (
                         <li key={tab}>
                             <button
                                 className={activeTab === tab.toLowerCase() ? 'active' : ''}
                                 onClick={() => setActiveTab(tab.toLowerCase())}
                             >
                                 {tab}
+                                {tab === 'Notifications' && notificationsCount > 0 && (
+                                    <span className="notification-badge">{notificationsCount}</span>
+                                )}
                             </button>
                         </li>
                     ))}
@@ -72,6 +91,8 @@ function Content({ activeTab, currentUser, setActiveTab, location }) {
             return <MakeQuizzesContent currentUser={currentUser} />;
         case 'results':
             return <ResultsContent currentUser={currentUser} initialQuizCode={location.state?.quizCode} />;
+        case 'notifications':
+            return <NotificationsContent currentUser={currentUser} />;
         case 'settings':
             return <SettingsContent currentUser={currentUser} />;
         default:
@@ -92,6 +113,7 @@ function HomeContent({ currentUser, setActiveTab }) {
         questions: [],
     });
     const [message, setMessage] = useState('');
+    const [notificationsCount, setNotificationsCount] = useState(0);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -101,16 +123,23 @@ function HomeContent({ currentUser, setActiveTab }) {
             setLoading(true);
             setError('');
             try {
-                const response = await axios.get(`http://localhost:3000/api/quizzes/created/${currentUser.id}`);
-                if (response.status === 200) {
-                    setQuizzes(response.data);
-                    setFilteredQuizzes(response.data);
+                const [quizzesResponse, notificationsResponse] = await Promise.all([
+                    axios.get(`http://localhost:3000/api/quizzes/created/${currentUser.id}`),
+                    axios.get(`http://localhost:3000/api/retest-requests/teacher/${currentUser.id}`)
+                ]);
+
+                if (quizzesResponse.status === 200) {
+                    setQuizzes(quizzesResponse.data);
+                    setFilteredQuizzes(quizzesResponse.data);
                 } else {
                     throw new Error('Failed to fetch quizzes');
                 }
+
+                const unreadCount = notificationsResponse.data.filter(r => r.status === 'pending').length;
+                setNotificationsCount(unreadCount);
             } catch (err) {
-                console.error('Error fetching created quizzes:', err);
-                setError('Failed to load your quizzes. Please try again later.');
+                console.error('Error fetching data:', err);
+                setError('Failed to load your quizzes or notifications. Please try again later.');
             } finally {
                 setLoading(false);
             }
@@ -210,10 +239,8 @@ function HomeContent({ currentUser, setActiveTab }) {
         navigate('.', { state: { quizCode } });
     };
 
-    // Get stats
     const totalQuizzes = quizzes.length;
     const upcomingQuizzes = quizzes.filter(quiz => new Date(quiz.due_date) > new Date()).length;
-    const recentQuiz = quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
 
     return (
         <div className="content">
@@ -234,8 +261,8 @@ function HomeContent({ currentUser, setActiveTab }) {
                     <span className="stat-label">Upcoming Due</span>
                 </div>
                 <div className="stat-card">
-                    <span className="stat-value">{quizzes.length > 0 ? 'Yes' : 'No'}</span>
-                    <span className="stat-label">Recent Activity</span>
+                    <span className="stat-value">{notificationsCount}</span>
+                    <span className="stat-label">Notifications</span>
                 </div>
             </div>
 
@@ -264,21 +291,21 @@ function HomeContent({ currentUser, setActiveTab }) {
 
             {!loading && filteredQuizzes.length > 0 && (
                 <>
-                    {recentQuiz && (
+                    {quizzes.length > 0 && (
                         <div className="latest-section">
                             <h2 className="section-title">Latest Quiz</h2>
                             <div
                                 className="latest-card clickable"
-                                onClick={() => handleQuizClick(recentQuiz.quiz_code)}
+                                onClick={() => handleQuizClick(quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].quiz_code)}
                             >
-                                <h3 className="latest-title">{recentQuiz.quiz_name}</h3>
+                                <h3 className="latest-title">{quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].quiz_name}</h3>
                                 <div className="quiz-details">
-                                    <p><span className="detail-label">Code:</span> {recentQuiz.quiz_code}</p>
-                                    <p><span className="detail-label">Questions:</span> {recentQuiz.questions.questions.length}</p>
-                                    <p><span className="detail-label">Due:</span> {new Date(recentQuiz.due_date).toLocaleDateString()}</p>
-                                    <p><span className="detail-label">Created:</span> {new Date(recentQuiz.created_at).toLocaleDateString()}</p>
+                                    <p><span className="detail-label">Code:</span> {quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].quiz_code}</p>
+                                    <p><span className="detail-label">Questions:</span> {quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].questions.questions.length}</p>
+                                    <p><span className="detail-label">Due:</span> {new Date(quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].due_date).toLocaleDateString()}</p>
+                                    <p><span className="detail-label">Created:</span> {new Date(quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].created_at).toLocaleDateString()}</p>
                                 </div>
-                                <button className="view-details-btn" onClick={(e) => { e.stopPropagation(); handleViewDetails(recentQuiz); }}>
+                                <button className="view-details-btn" onClick={(e) => { e.stopPropagation(); handleViewDetails(quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]); }}>
                                     View Details
                                 </button>
                             </div>
@@ -324,7 +351,6 @@ function HomeContent({ currentUser, setActiveTab }) {
 
             <p className="welcome-text">Welcome, {currentUser?.username}! Manage your quizzes with ease.</p>
 
-            {/* Edit Quiz Modal */}
             {selectedQuiz && (
                 <div className="modal-overlay" onClick={handleCancel}>
                     <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -403,6 +429,8 @@ function HomeContent({ currentUser, setActiveTab }) {
         </div>
     );
 }
+
+// Other components (MakeQuizzesContent, ResultsContent, NotificationsContent, SettingsContent) remain unchanged
 
 function MakeQuizzesContent({ currentUser }) {
     const [quizName, setQuizName] = useState('');
@@ -744,6 +772,67 @@ function ResultsContent({ currentUser, initialQuizCode }) {
 
             {!loading && !error && attempts.length === 0 && quizCode && (
                 <p className="empty-state">No attempts found for quiz code: {quizCode}</p>
+            )}
+        </div>
+    );
+}
+
+function NotificationsContent({ currentUser }) {
+    const [notifications, setNotifications] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            if (!currentUser?.id) return;
+
+            setLoading(true);
+            setError('');
+            try {
+                const response = await axios.get(`http://localhost:3000/api/retest-requests/teacher/${currentUser.id}`);
+                setNotifications(response.data);
+            } catch (error) {
+                console.error('Error fetching notifications:', error);
+                setError('Failed to load notifications. Please try again later.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchNotifications();
+    }, [currentUser]);
+
+    return (
+        <div className="content">
+            <h2>Notifications</h2>
+            {loading && (
+                <div className="loading-overlay">
+                    <div className="spinner"></div>
+                    <p>Loading notifications...</p>
+                </div>
+            )}
+            {error && (
+                <div className="error-message">
+                    <span className="error-icon">⚠️</span>
+                    {error}
+                </div>
+            )}
+            {!loading && !error && notifications.length === 0 && (
+                <p className="empty-state">No pending retest requests.</p>
+            )}
+            {!loading && !error && notifications.length > 0 && (
+                <div className="notifications-list">
+                    {notifications.map((notification) => (
+                        <div key={notification.request_id} className="notification-item">
+                            <p>
+                                <strong>{notification.student_name}</strong> requested a retest for
+                                <strong> {notification.quiz_name}</strong> (Code: {notification.quiz_code})
+                            </p>
+                            <p>Requested on: {new Date(notification.request_date).toLocaleString()}</p>
+                            <p>Status: {notification.status}</p>
+                        </div>
+                    ))}
+                </div>
             )}
         </div>
     );
