@@ -567,33 +567,127 @@ body {
     margin-top: 20px;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 20px;
+    padding: 0 10px;
 }
 
 .teacher-dashboard .notification-item {
     background: #ffffff;
     padding: 15px;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     transition: all 0.3s ease;
-    border: 1px solid transparent;
+    border: 1px solid #e0e6ed;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between; /* Keeps text on left, actions on right */
+    align-items: flex-start; /* Aligns content to the top instead of center */
+    gap: 20px; /* Space between text and actions */
 }
 
 .teacher-dashboard .notification-item:hover {
     transform: translateY(-5px);
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
     border: 1px solid #3498db;
+    background: #f9fcff;
 }
 
-.teacher-dashboard .notification-item p {
-    margin: 5px 0;
+/* Container for text content (left side) */
+.teacher-dashboard .notification-item .text-content {
+    flex: 1; /* Takes available space on the left */
+    display: flex;
+    flex-direction: column;
+    gap: 5px; /* Spacing between text lines */
+    text-align: left; /* Explicitly align text to the left */
+}
+
+/* Text styling */
+.teacher-dashboard .notification-item .text-content p {
+    margin: 0;
     color: #34495e;
-    font-size: 14px;
+    font-size: 15px;
+    line-height: 1.5;
 }
 
-.teacher-dashboard .notification-item p strong {
+/* Strong text styling */
+.teacher-dashboard .notification-item .text-content p strong {
     color: #2c3e50;
+    font-weight: 700;
+    margin-right: 6px;
+}
+
+/* Action Buttons (right side) */
+.teacher-dashboard .notification-item .action-buttons {
+    display: flex;
+    align-items: center; /* Vertically center password and buttons */
+    gap: 10px; /* Space between input and buttons */
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+/* Password Input */
+.teacher-dashboard .notification-item .password-input {
+    padding: 6px 10px;
+    border: 1px solid #d0d7de;
+    border-radius: 8px;
+    font-size: 14px;
+    width: 150px;
+    transition: border-color 0.3s ease;
+}
+
+.teacher-dashboard .notification-item .password-input:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+}
+
+/* Allow/Decline Buttons */
+.teacher-dashboard .notification-item .allow-btn,
+.teacher-dashboard .notification-item .decline-btn {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 20px;
+    font-size: 13px;
     font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+}
+
+.teacher-dashboard .notification-item .allow-btn {
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(46, 204, 113, 0.3);
+}
+
+.teacher-dashboard .notification-item .allow-btn:hover {
+    background: linear-gradient(135deg, #27ae60, #219653);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(46, 204, 113, 0.5);
+}
+
+.teacher-dashboard .notification-item .decline-btn {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(231, 76, 60, 0.3);
+}
+
+.teacher-dashboard .notification-item .decline-btn:hover {
+    background: linear-gradient(135deg, #c0392b, #a93226);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.5);
+}
+
+/* Responsive Adjustment */
+@media (max-width: 600px) {
+    .teacher-dashboard .notification-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .teacher-dashboard .notification-item .action-buttons {
+        width: 100%;
+        justify-content: flex-end; /* Keep actions on right in column view */
+    }
 }
 
 /* Responsive Design */

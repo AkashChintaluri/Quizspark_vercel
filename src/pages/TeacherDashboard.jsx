@@ -781,7 +781,7 @@ function NotificationsContent({ currentUser }) {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [teacherPassword, setTeacherPassword] = useState(''); // For password input
+    const [teacherPassword, setTeacherPassword] = useState('');
 
     useEffect(() => {
         const fetchNotifications = async () => {
@@ -816,14 +816,13 @@ function NotificationsContent({ currentUser }) {
             });
 
             if (response.status === 200) {
-                // Optimistically update the state to remove the notification
-                setNotifications(prevNotifications => (
+                setNotifications(prevNotifications =>
                     prevNotifications.filter(notif => notif.request_id !== requestId)
-                ));
+                );
                 setError('');
-                setTeacherPassword(''); // Clear password after successful action
+                setTeacherPassword('');
             } else {
-                console.log(response)
+                console.log(response);
                 setError(response.response?.data?.error || 'Failed to update retest request. Please check your password.');
             }
         } catch (error) {
@@ -831,7 +830,6 @@ function NotificationsContent({ currentUser }) {
             setError(error.response?.data?.error || 'Failed to update retest request. Please check your password.');
         }
     };
-
 
     return (
         <div className="content">
@@ -854,18 +852,24 @@ function NotificationsContent({ currentUser }) {
             {!loading && !error && notifications.length > 0 && (
                 <div className="notifications-list">
                     {notifications.map((notification) => (
-                        <div key={notification.request_id} className="notification-item">
-                            <p>
-                                <strong>{notification.student_name}</strong> requested a retest for
-                                <strong> {notification.quiz_name}</strong> (Code: {notification.quiz_code})
-                            </p>
-                            <p>Requested on: {new Date(notification.request_date).toLocaleString()}</p>
-                            <p>Status: {notification.status}</p>
+                        <div
+                            key={notification.request_id}
+                            className="notification-item"
+                            data-status={notification.status}
+                        >
+                            <div className="text-content">
+                                <p>
+                                    <strong>{notification.student_name}</strong> requested a retest for{' '}
+                                    <strong>{notification.quiz_name}</strong> (Code: {notification.quiz_code})
+                                </p>
+                                <p>Requested on: {new Date(notification.request_date).toLocaleString()}</p>
+                                <p>Status: {notification.status}</p>
+                            </div>
                             {notification.status === 'pending' && (
                                 <div className="action-buttons">
                                     <input
                                         type="password"
-                                        placeholder="Enter your password"
+                                        placeholder="Password"
                                         value={teacherPassword}
                                         onChange={(e) => setTeacherPassword(e.target.value)}
                                         className="password-input"
@@ -891,7 +895,6 @@ function NotificationsContent({ currentUser }) {
         </div>
     );
 }
-
 
 function SettingsContent({ currentUser }) {
     const navigate = useNavigate();
