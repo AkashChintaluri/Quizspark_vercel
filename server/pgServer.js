@@ -599,12 +599,12 @@ function startServer() {
 
             // Verify teacher password
             const teacherQuery = `
-                SELECT t.password 
-                FROM quizzes q
-                JOIN teacher_login t ON q.created_by = t.id
-                JOIN retest_requests rr ON q.quiz_id = rr.quiz_id
-                WHERE rr.request_id = $1
-            `;
+            SELECT t.password 
+            FROM quizzes q
+            JOIN teacher_login t ON q.created_by = t.id
+            JOIN retest_requests rr ON q.quiz_id = rr.quiz_id
+            WHERE rr.request_id = $1
+        `;
             const teacherResult = await pool.query(teacherQuery, [request_id]);
 
             if (teacherResult.rows.length === 0 || teacherResult.rows[0].password !== teacher_password) {
@@ -613,24 +613,31 @@ function startServer() {
 
             // Update retest request status
             const updateQuery = `
-                UPDATE retest_requests 
-                SET status = $1,
-                    updated_at = NOW()
-                WHERE request_id = $2
-                RETURNING *
-            `;
+            UPDATE retest_requests 
+            SET status = $1,
+                updated_at = NOW()
+            WHERE request_id = $2
+            RETURNING *
+        `;
             const result = await pool.query(updateQuery, [status, request_id]);
 
             if (result.rows.length === 0) {
                 return res.status(404).json({ error: 'Retest request not found' });
             }
 
-            // If approved, delete the previous attempt
+            // If approved, delete the retest request and then the quiz attempt
             if (status === 'approved') {
+                // First, delete the retest request
                 await pool.query(`
-                    DELETE FROM quiz_attempts 
-                    WHERE attempt_id = $1
-                `, [result.rows[0].attempt_id]);
+                DELETE FROM retest_requests 
+                WHERE request_id = $1
+            `, [request_id]);
+
+                // Then, delete the quiz attempt
+                await pool.query(`
+                DELETE FROM quiz_attempts 
+                WHERE attempt_id = $1
+            `, [result.rows[0].attempt_id]);
             }
 
             res.json(result.rows[0]);

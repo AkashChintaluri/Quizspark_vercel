@@ -864,3 +864,61 @@ body {
     box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
     border: 1px solid #3498db;
 }
+
+/* Action Buttons */
+.teacher-dashboard .action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    align-items: center;
+}
+
+.teacher-dashboard .password-input {
+    padding: 8px;
+    border: 1px solid #bdc3c7;
+    border-radius: 6px;
+    font-size: 14px;
+    width: 200px;
+    transition: border-color 0.3s ease;
+}
+
+.teacher-dashboard .password-input:focus {
+    border-color: #3498db;
+    outline: none;
+}
+
+.teacher-dashboard .allow-btn {
+    padding: 8px 16px;
+    background: #2ecc71;
+    color: #fff;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(46, 204, 113, 0.3);
+}
+
+.teacher-dashboard .allow-btn:hover {
+    background: #27ae60;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(46, 204, 113, 0.5);
+}
+
+.teacher-dashboard .decline-btn {
+    padding: 8px 16px;
+    background: #e74c3c;
+    color: #fff;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(231, 76, 60, 0.3);
+}
+
+.teacher-dashboard .decline-btn:hover {
+    background: #c0392b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(231, 76, 60, 0.5);
+}

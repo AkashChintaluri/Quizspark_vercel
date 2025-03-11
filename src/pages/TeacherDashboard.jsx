@@ -781,6 +781,7 @@ function NotificationsContent({ currentUser }) {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [teacherPassword, setTeacherPassword] = useState(''); // For password input
 
     useEffect(() => {
         const fetchNotifications = async () => {
@@ -801,6 +802,36 @@ function NotificationsContent({ currentUser }) {
 
         fetchNotifications();
     }, [currentUser]);
+
+    const handleRetestAction = async (requestId, status) => {
+        if (!teacherPassword) {
+            setError('Please enter your password to approve or decline a request.');
+            return;
+        }
+
+        try {
+            const response = await axios.put(`http://localhost:3000/api/retest-requests/${requestId}`, {
+                status,
+                teacher_password: teacherPassword,
+            });
+
+            if (response.status === 200) {
+                // Optimistically update the state to remove the notification
+                setNotifications(prevNotifications => (
+                    prevNotifications.filter(notif => notif.request_id !== requestId)
+                ));
+                setError('');
+                setTeacherPassword(''); // Clear password after successful action
+            } else {
+                console.log(response)
+                setError(response.response?.data?.error || 'Failed to update retest request. Please check your password.');
+            }
+        } catch (error) {
+            console.error('Error updating retest request:', error);
+            setError(error.response?.data?.error || 'Failed to update retest request. Please check your password.');
+        }
+    };
+
 
     return (
         <div className="content">
@@ -830,6 +861,29 @@ function NotificationsContent({ currentUser }) {
                             </p>
                             <p>Requested on: {new Date(notification.request_date).toLocaleString()}</p>
                             <p>Status: {notification.status}</p>
+                            {notification.status === 'pending' && (
+                                <div className="action-buttons">
+                                    <input
+                                        type="password"
+                                        placeholder="Enter your password"
+                                        value={teacherPassword}
+                                        onChange={(e) => setTeacherPassword(e.target.value)}
+                                        className="password-input"
+                                    />
+                                    <button
+                                        onClick={() => handleRetestAction(notification.request_id, 'approved')}
+                                        className="allow-btn"
+                                    >
+                                        Allow
+                                    </button>
+                                    <button
+                                        onClick={() => handleRetestAction(notification.request_id, 'declined')}
+                                        className="decline-btn"
+                                    >
+                                        Decline
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -837,6 +891,7 @@ function NotificationsContent({ currentUser }) {
         </div>
     );
 }
+
 
 function SettingsContent({ currentUser }) {
     const navigate = useNavigate();
