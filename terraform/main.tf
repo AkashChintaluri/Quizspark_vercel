@@ -1,5 +1,14 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.50"
+    }
+  }
+}
+
 provider "aws" {
-  region = var.region
+  region = "ap-south-1"  # Hardcoded for Mumbai region
 }
 
 resource "aws_key_pair" "quizspark_key" {
@@ -9,7 +18,7 @@ resource "aws_key_pair" "quizspark_key" {
 
 resource "aws_security_group" "quizspark_sg" {
   name        = "quizspark-sg"
-  description = "Allow HTTP, HTTPS, and SSH"
+  description = "Allow web and SSH access"
 
   ingress {
     from_port   = 22
@@ -25,6 +34,13 @@ resource "aws_security_group" "quizspark_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
@@ -34,30 +50,31 @@ resource "aws_security_group" "quizspark_sg" {
 }
 
 resource "aws_instance" "quizspark_server" {
-  ami           = "ami-0c55b159cbfafe1f0" # Ubuntu 22.04 LTS
+  ami           = "ami-0cbf3786ef54c3c79"  # Mumbai region AMI
   instance_type = "t2.micro"
   key_name      = aws_key_pair.quizspark_key.key_name
   vpc_security_group_ids = [aws_security_group.quizspark_sg.id]
 
-  # Install dependencies and deploy application
   provisioner "remote-exec" {
     inline = [
       "sudo apt-get update -y",
       "sudo apt-get install -y nodejs npm git",
       "sudo npm install -g pm2",
-      "git clone https://github.com/AkashChintaluri/quizspark.git",
-      "cd quizspark && npm install",
+      "git clone https://github.com/AkashChintaluri/quizspark.git || true",
+      "cd quizspark && npm install --production",
       "npm run build",
-      "cd server && npm install",
-      "pm2 start pgServer.js"
+      "cd server && npm install --production",
+      "pm2 start pgServer.js --update-env"
     ]
   }
 
   connection {
     type        = "ssh"
     user        = "ubuntu"
-    private_key = file("~/.ssh/id_rsa") # Replace with your private key path
+    private_key = file("~/.ssh/id_rsa")
     host        = self.public_ip
+    timeout     = "5m"
+    agent       = false
   }
 
   tags = {
