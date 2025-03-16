@@ -13,7 +13,7 @@ provider "aws" {
 
 resource "aws_key_pair" "quizspark_key" {
   key_name   = "quizspark-key"
-  public_key = file("C:\Users\akash\.ssh\id_rsa.pub")
+  public_key = file("C:/Users/akash/.ssh/id_rsa.pub")
 }
 
 resource "aws_security_group" "quizspark_sg" {
@@ -71,7 +71,7 @@ resource "aws_instance" "quizspark_server" {
   connection {
     type        = "ssh"
     user        = "ubuntu"
-    private_key = file("C:\Users\akash\.ssh\id_rsa")
+    private_key = file("C:/Users/akash/.ssh/id_rsa")
     host        = self.public_ip
     timeout     = "5m"
     agent       = false
