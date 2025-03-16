@@ -1,0 +1,43 @@
+name: Terraform Deployment
+
+on:
+  push:
+    branches: [ "main" ] # Workflow triggers on pushes to the main branch
+
+env:
+  AWS_REGION: "ap-south-1" # Set your AWS region
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the code from the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Configure AWS credentials using GitHub Secrets
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }} # The ARN of your IAM role
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Step 3: Set up Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # Step 4: Initialize Terraform
+      - name: Terraform Init
+        run: terraform init
+        working-directory: ./terraform
+
+      # Step 5: Plan Terraform changes
+      - name: Terraform Plan
+        run: terraform plan
+        working-directory: ./terraform
+
+      # Step 6: Apply Terraform changes (Deploy infrastructure)
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+        working-directory: ./terraform
