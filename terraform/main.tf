@@ -50,7 +50,7 @@ resource "aws_security_group" "quizspark_sg" {
 }
 
 resource "aws_instance" "quizspark_server" {
-  ami           = "ami-0cbf3786ef54c3c79"  # Mumbai region AMI
+  ami           = "ami-05c179eced2eb9b5b"  # Mumbai region AMI
   instance_type = "t2.micro"
   key_name      = aws_key_pair.quizspark_key.key_name
   vpc_security_group_ids = [aws_security_group.quizspark_sg.id]
