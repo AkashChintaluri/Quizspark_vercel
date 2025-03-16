@@ -24,3 +24,11 @@ dist-ssr
 *.sw?
 
 .env
+
+# Terraform files
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+.terraform.lock.hcl
+
