@@ -8,23 +8,76 @@ terraform {
 }
 
 provider "aws" {
-  region = "ap-south-1"  # Hardcoded for Mumbai region
+  region = var.aws_region
 }
 
-resource "aws_key_pair" "quizspark_key" {
-  key_name   = "quizspark-key"
-  public_key = file("C:/Users/akash/.ssh/id_rsa.pub")
+# VPC Configuration
+resource "aws_vpc" "quizspark_vpc" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  tags = {
+    Name        = "quizspark-vpc"
+    Environment = var.environment
+  }
 }
 
+# Public Subnet
+resource "aws_subnet" "public" {
+  vpc_id                  = aws_vpc.quizspark_vpc.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = "${var.aws_region}a"
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name        = "quizspark-public-subnet"
+    Environment = var.environment
+  }
+}
+
+# Internet Gateway
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.quizspark_vpc.id
+
+  tags = {
+    Name        = "quizspark-igw"
+    Environment = var.environment
+  }
+}
+
+# Route Table
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.quizspark_vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
+  }
+
+  tags = {
+    Name        = "quizspark-public-rt"
+    Environment = var.environment
+  }
+}
+
+resource "aws_route_table_association" "public" {
+  subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.public.id
+}
+
+# Security Group
 resource "aws_security_group" "quizspark_sg" {
   name        = "quizspark-sg"
-  description = "Allow web and SSH access"
+  description = "Security group for QuizSpark application"
+  vpc_id      = aws_vpc.quizspark_vpc.id
 
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "SSH access"
   }
 
   ingress {
@@ -32,6 +85,7 @@ resource "aws_security_group" "quizspark_sg" {
     to_port     = 3000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "Application port"
   }
 
   ingress {
@@ -39,6 +93,7 @@ resource "aws_security_group" "quizspark_sg" {
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    description = "HTTP"
   }
 
   egress {
@@ -47,41 +102,68 @@ resource "aws_security_group" "quizspark_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
+
+  tags = {
+    Name        = "quizspark-sg"
+    Environment = var.environment
+  }
+}
+
+# EC2 Instance
+data "aws_ami" "ubuntu" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  owners = ["099720109477"] # Canonical
 }
 
 resource "aws_instance" "quizspark_server" {
-  ami           = "ami-05c179eced2eb9b5b"  # Mumbai region AMI
-  instance_type = "t2.micro"
-  key_name      = aws_key_pair.quizspark_key.key_name
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = var.instance_type
+  subnet_id     = aws_subnet.public.id
+  key_name      = var.key_name
+
   vpc_security_group_ids = [aws_security_group.quizspark_sg.id]
 
-  provisioner "remote-exec" {
-    inline = [
-      "sudo apt-get update -y",
-      "sudo apt-get install -y nodejs npm git",
-      "sudo npm install -g pm2",
-      "git clone https://github.com/AkashChintaluri/quizspark.git || true",
-      "cd quizspark && npm install --production",
-      "npm run build",
-      "cd server && npm install --production",
-      "pm2 start pgServer.js --update-env"
-    ]
+  root_block_device {
+    volume_size = 20
+    volume_type = "gp3"
   }
 
-  connection {
-    type        = "ssh"
-    user        = "ubuntu"
-    private_key = file("C:/Users/akash/.ssh/id_rsa")
-    host        = self.public_ip
-    timeout     = "5m"
-    agent       = false
-  }
+  user_data = <<-EOF
+              #!/bin/bash
+              apt-get update -y
+              apt-get install -y nodejs npm git nginx
+              npm install -g pm2
+              git clone ${var.repository_url} /app
+              cd /app
+              npm install --production
+              npm run build
+              cd server
+              npm install --production
+              pm2 start pgServer.js --update-env
+              EOF
 
   tags = {
-    Name = "QuizSpark-Server"
+    Name        = "QuizSpark-Server"
+    Environment = var.environment
   }
 }
 
+# Outputs
 output "public_ip" {
   value = aws_instance.quizspark_server.public_ip
+}
+
+output "vpc_id" {
+  value = aws_vpc.quizspark_vpc.id
 }
