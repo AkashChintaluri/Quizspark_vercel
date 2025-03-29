@@ -356,16 +356,16 @@ body {
 .student-dashboard .request-retest-btn {
     background: linear-gradient(90deg, #7f9cf5 0%, #667eea 100%);
     color: #fff;
-    padding: 0.75rem 1.5rem;
+    padding: 0.75rem 2rem;
     border: none;
     border-radius: 25px;
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-weight: 600;
     transition: all 0.3s ease;
     box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
     display: inline-block;
-    margin: 1rem;
-    min-width: 160px;
+    margin: 0.5rem;
+    min-width: 180px;
     text-align: center;
     position: relative;
     overflow: hidden;
@@ -392,8 +392,8 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 1.5rem;
-    margin: 2rem 0;
+    gap: 2rem;
+    margin: 1rem 0 0.5rem 0;
     padding: 0 1rem;
 }
 
@@ -517,6 +517,15 @@ body {
     align-items: center;
     padding: 0.5rem 1rem;
     width: 100%;
+}
+
+.student-dashboard .quiz-result h3 {
+    font-size: 1.8rem;
+    color: #1e293b;
+    text-align: center;
+    margin: 0.25rem 0;
+    padding: 0.25rem;
+    font-weight: 700;
 }
 
 .student-dashboard .final-score {
