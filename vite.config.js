@@ -25,5 +25,8 @@ export default defineConfig({
         assetFileNames: 'assets/[name].[hash].[ext]'
       }
     }
+  },
+  resolve: {
+    extensions: ['.js', '.jsx', '.json']
   }
 });
