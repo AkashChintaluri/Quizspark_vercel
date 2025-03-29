@@ -19,6 +19,8 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "DATABASE_URL": "@database_url"
   }
-} 
+}
+

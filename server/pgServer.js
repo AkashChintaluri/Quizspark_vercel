@@ -8,9 +8,10 @@ dotenv.config();
 
 const app = express();
 
-// Add health check endpoint
-app.get('/', (req, res) => {
-    res.json({ status: 'ok', message: 'QuizSpark API is running' });
+// Log all requests
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
 });
 
 // Configure CORS
@@ -27,27 +28,36 @@ app.options('*', cors());
 
 app.use(express.json());
 
-// Create a new pool for each request
-const getPool = () => {
-    return new Pool({
-        connectionString: process.env.DATABASE_URL,
-        ssl: {
-            rejectUnauthorized: false
-        }
-    });
-};
-
 // Error logging middleware
 app.use((err, req, res, next) => {
     console.error('Error:', err);
-    res.status(500).json({ error: 'Internal Server Error', details: err.message });
+    console.error('Stack:', err.stack);
+    res.status(500).json({ 
+        error: 'Internal Server Error', 
+        details: err.message,
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
 });
 
-// Log all requests
-app.use((req, res, next) => {
-    console.log(`${req.method} ${req.url}`);
-    next();
+// Add health check endpoint
+app.get('/', (req, res) => {
+    res.json({ status: 'ok', message: 'QuizSpark API is running' });
 });
+
+// Create a new pool for each request
+const getPool = () => {
+    try {
+        return new Pool({
+            connectionString: process.env.DATABASE_URL,
+            ssl: {
+                rejectUnauthorized: false
+            }
+        });
+    } catch (error) {
+        console.error('Error creating database pool:', error);
+        throw error;
+    }
+};
 
 // Wrap all database operations in a try-catch block
 const handleDatabaseOperation = async (operation) => {
@@ -57,9 +67,14 @@ const handleDatabaseOperation = async (operation) => {
         return result;
     } catch (error) {
         console.error('Database operation error:', error);
+        console.error('Stack:', error.stack);
         throw error;
     } finally {
-        await pool.end();
+        try {
+            await pool.end();
+        } catch (error) {
+            console.error('Error closing pool:', error);
+        }
     }
 };
 
@@ -90,7 +105,18 @@ app.post('/signup', async (req, res) => {
 
 app.post('/login', async (req, res) => {
     const { username, password, userType } = req.body;
+    console.log('Login attempt:', { username, userType });
+    
+    if (!username || !password || !userType) {
+        console.error('Missing required fields:', { username, userType });
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Missing required fields' 
+        });
+    }
+
     const table = userType === 'student' ? 'student_login' : 'teacher_login';
+    console.log('Using table:', table);
 
     try {
         const result = await handleDatabaseOperation(async (pool) => {
@@ -99,10 +125,12 @@ app.post('/login', async (req, res) => {
                 FROM ${table} 
                 WHERE username = $1 AND password = $2
             `;
+            console.log('Executing query:', query);
             return await pool.query(query, [username, password]);
         });
 
         if (result.rows.length > 0) {
+            console.log('Login successful for user:', result.rows[0].username);
             res.json({
                 success: true,
                 user: {
@@ -111,11 +139,20 @@ app.post('/login', async (req, res) => {
                 }
             });
         } else {
-            res.status(401).json({ success: false, message: 'Invalid credentials' });
+            console.log('Login failed: Invalid credentials for username:', username);
+            res.status(401).json({ 
+                success: false, 
+                message: 'Invalid credentials' 
+            });
         }
     } catch (error) {
         console.error('Login error:', error);
-        res.status(500).json({ error: 'Login failed' });
+        console.error('Stack:', error.stack);
+        res.status(500).json({ 
+            success: false,
+            error: 'Login failed',
+            details: error.message
+        });
     }
 });
 
