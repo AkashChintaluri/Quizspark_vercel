@@ -13,4 +13,16 @@ const getApiUrl = () => {
   return 'https://quizspark-backend.vercel.app';
 };
 
-export const API_URL = getApiUrl(); 
+// Create axios instance with default config
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: getApiUrl(),
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+export const API_URL = getApiUrl();
+export default api; 
