@@ -325,6 +325,7 @@ body {
     font-weight: 600;
     transition: all 0.3s ease;
     box-shadow: 0 2px 4px rgba(118, 75, 162, 0.3);
+    text-align: center;
 }
 
 .student-dashboard .submit-quiz-btn:hover {
@@ -351,21 +352,49 @@ body {
     box-shadow: 0 4px 8px rgba(102, 126, 234, 0.5);
 }
 
+.student-dashboard .check-leaderboard-btn,
 .student-dashboard .request-retest-btn {
-    padding: 12px 24px;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(90deg, #7f9cf5 0%, #667eea 100%);
     color: #fff;
+    padding: 0.75rem 1.5rem;
     border: none;
-    border-radius: 6px;
-    cursor: pointer;
+    border-radius: 25px;
+    font-size: 1rem;
     font-weight: 600;
     transition: all 0.3s ease;
-    margin-top: 15px;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+    display: inline-block;
+    margin: 1rem;
+    min-width: 160px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.student-dashboard .check-leaderboard-btn:hover,
+.student-dashboard .request-retest-btn:hover {
+    background: linear-gradient(90deg, #667eea 0%, #5a67d8 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.5);
+}
+
+.student-dashboard .request-retest-btn {
+    background: linear-gradient(90deg, #9f7aea 0%, #764ba2 100%);
+    box-shadow: 0 2px 4px rgba(118, 75, 162, 0.3);
 }
 
 .student-dashboard .request-retest-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+    background: linear-gradient(90deg, #764ba2 0%, #553c9a 100%);
+    box-shadow: 0 4px 8px rgba(118, 75, 162, 0.5);
+}
+
+.student-dashboard .quiz-result .button-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    margin: 2rem 0;
+    padding: 0 1rem;
 }
 
 .student-dashboard .quiz-container {
@@ -1080,6 +1109,237 @@ body {
     color: #475569;
 }
 
+.student-dashboard .leaderboard-content {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.student-dashboard .leaderboard-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid #e2e8f0;
+    position: relative;
+}
+
+.student-dashboard .leaderboard-header h2 {
+    color: #1e293b;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.student-dashboard .leaderboard-subtitle {
+    color: #64748b;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.student-dashboard .leaderboard-search-container {
+    max-width: 600px;
+    margin: 0 auto 2rem;
+    padding: 1.5rem;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.student-dashboard .leaderboard-search-form .quiz-code-input {
+    flex: 1;
+    padding: 0.875rem 1.25rem;
+    font-size: 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.student-dashboard .leaderboard-search-form .quiz-code-input:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    outline: none;
+}
+
+.student-dashboard .leaderboard-search-form .view-leaderboard-btn {
+    padding: 0.875rem 1.75rem;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+}
+
+.student-dashboard .leaderboard-search-form .view-leaderboard-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(79, 70, 229, 0.3);
+}
+
+.student-dashboard .quiz-info-card {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    color: #1e293b;
+    padding: 1.5rem;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.student-dashboard .quiz-info-card h3 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: #1e293b;
+}
+
+.student-dashboard .quiz-info-card p {
+    font-size: 1.1rem;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.student-dashboard .leaderboard-table-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    overflow-x: auto;
+}
+
+.student-dashboard .leaderboard-table {
+    width: 100%;
+    min-width: 800px;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-top: 1rem;
+}
+
+.student-dashboard .leaderboard-table th,
+.student-dashboard .leaderboard-table td {
+    padding: 1rem 2rem;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.student-dashboard .leaderboard-table th {
+    background-color: #f8fafc;
+    padding: 1rem 2rem;
+    text-align: left;
+    font-weight: 600;
+    color: #64748b;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.student-dashboard .leaderboard-table th:last-child {
+    text-align: right;
+}
+
+.student-dashboard .leaderboard-table td:first-child {
+    font-weight: 600;
+    color: #475569;
+    font-size: 1.1rem;
+    width: 100px;
+}
+
+.student-dashboard .leaderboard-table td:nth-child(2) {
+    font-weight: 500;
+    color: #1e293b;
+    width: 60%;
+}
+
+.student-dashboard .leaderboard-table td:last-child {
+    font-weight: 600;
+    color: #4f46e5;
+    width: 150px;
+    text-align: right;
+}
+
+.student-dashboard .leaderboard-search-box {
+    margin: 1.5rem 0;
+    padding: 0 1.5rem;
+}
+
+.student-dashboard .student-search-input {
+    width: 100%;
+    padding: 0.875rem 1.25rem;
+    font-size: 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.student-dashboard .student-search-input:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    outline: none;
+}
+
+.student-dashboard .student-search-input::placeholder {
+    color: #94a3b8;
+}
+
+.student-dashboard .leaderboard-table tr {
+    transition: all 0.3s ease;
+}
+
+.student-dashboard .leaderboard-table tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+.student-dashboard .leaderboard-table tr:hover {
+    background: #f1f5f9;
+}
+
+.student-dashboard .leaderboard-table tr.current-user {
+    background-color: #7c3aed;
+    color: white;
+    border-radius: 8px;
+}
+
+.student-dashboard .leaderboard-table tr.current-user td {
+    padding: 1rem 2rem;
+    border-bottom: none;
+    color: white;
+}
+
+.student-dashboard .leaderboard-table tr.current-user td:first-child {
+    border-top-left-radius: 8px;
+    border-bottom-left-radius: 8px;
+}
+
+.student-dashboard .leaderboard-table tr.current-user td:last-child {
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.student-dashboard .leaderboard-table tr.current-user + tr td {
+    border-top: none;
+}
+
+.student-dashboard .leaderboard-table tr.current-user td:first-child {
+    color: white;
+}
+
+.student-dashboard .leaderboard-table tr.current-user td:last-child {
+    color: white;
+}
+
 @media (max-width: 768px) {
     .student-dashboard {
         flex-direction: column;
@@ -1135,6 +1395,29 @@ body {
     .student-dashboard .notification-action-btn {
         width: 100%;
         justify-content: center;
+    }
+
+    .student-dashboard .leaderboard-content {
+        padding: 1.5rem;
+    }
+
+    .student-dashboard .leaderboard-header h2 {
+        font-size: 2rem;
+    }
+
+    .student-dashboard .search-input-wrapper {
+        flex-direction: column;
+    }
+
+    .student-dashboard .leaderboard-search-form .view-leaderboard-btn {
+        width: 100%;
+        margin-top: 1rem;
+    }
+
+    .student-dashboard .leaderboard-table th,
+    .student-dashboard .leaderboard-table td {
+        padding: 0.75rem;
+        font-size: 0.9rem;
     }
 }
 

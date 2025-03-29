@@ -38,10 +38,11 @@ function App() {
                         <Route path="/signup" element={<Layout><SignupForm /></Layout>} />
 
                         {/* Student Dashboard Routes */}
-                        <Route path="/student-dashboard" element={<Layout><StudentDashboard /></Layout>}>
+                        <Route path="/student-dashboard/*" element={<StudentDashboard />}>
                             <Route index element={null} />
                             <Route path="take-quiz/:quizCode" element={null} />
                             <Route path="quiz/:quizCode" element={null} />
+                            <Route path="leaderboard/:quizCode?" element={null} />
                         </Route>
 
                         <Route path="/teacher-dashboard" element={<Layout><TeacherDashboard /></Layout>} />

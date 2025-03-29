@@ -17,7 +17,6 @@ function StudentDashboard() {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
     const location = useLocation();
-    const { quizCode } = useParams();
 
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
@@ -43,8 +42,23 @@ function StudentDashboard() {
         }
     }, [navigate]);
 
+    useEffect(() => {
+        const pathParts = location.pathname.split('/');
+        const tabFromPath = pathParts[2];
+        if (tabFromPath) {
+            setActiveTab(tabFromPath.replace('-', ' '));
+        } else if (location.state?.activeTab) {
+            setActiveTab(location.state.activeTab);
+        }
+    }, [location]);
+
     const handleTabChange = (tab) => {
         setActiveTab(tab.toLowerCase());
+        if (tab === 'leaderboard') {
+            navigate('/student-dashboard/leaderboard');
+        } else {
+            navigate(`/student-dashboard/${tab.toLowerCase().replace(' ', '-')}`);
+        }
     };
 
     if (loading) {
@@ -55,8 +69,19 @@ function StudentDashboard() {
         <div className="student-dashboard">
             {currentUser ? (
                 <>
-                    <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} currentUser={currentUser} handleTabChange={handleTabChange} navigate={navigate} />
-                    <Content activeTab={activeTab} setActiveTab={setActiveTab} currentUser={currentUser} location={location} />
+                    <Sidebar 
+                        activeTab={activeTab} 
+                        setActiveTab={setActiveTab} 
+                        currentUser={currentUser} 
+                        handleTabChange={handleTabChange} 
+                        navigate={navigate} 
+                    />
+                    <Content 
+                        activeTab={activeTab} 
+                        setActiveTab={setActiveTab} 
+                        currentUser={currentUser} 
+                        location={location} 
+                    />
                 </>
             ) : (
                 <div className="auth-message">Session expired. Redirecting to login...</div>
@@ -65,12 +90,7 @@ function StudentDashboard() {
     );
 }
 
-function Sidebar({ activeTab, currentUser, handleTabChange, navigate }) {
-    const handleTabClick = (tab) => {
-        navigate('/student-dashboard');
-        handleTabChange(tab);
-    };
-
+function Sidebar({ activeTab, currentUser, handleTabChange }) {
     return (
         <div className="sidebar">
             <h2>Student Dashboard</h2>
@@ -81,11 +101,11 @@ function Sidebar({ activeTab, currentUser, handleTabChange, navigate }) {
             )}
             <nav>
                 <ul>
-                    {['Home', 'Take Quiz', 'Results', 'Settings'].map((tab) => (
+                    {['Home', 'Take Quiz', 'Results', 'Leaderboard', 'Settings'].map((tab) => (
                         <li key={tab}>
                             <button
                                 className={activeTab === tab.toLowerCase() ? 'active' : ''}
-                                onClick={() => handleTabClick(tab.toLowerCase())}
+                                onClick={() => handleTabChange(tab)}
                             >
                                 {tab}
                             </button>
@@ -105,7 +125,7 @@ function Content({ activeTab, setActiveTab, currentUser, location }) {
     }
 
     if (pathname.includes('/quiz/')) {
-        return <ResultsContent currentUser={currentUser} />;
+        return <ResultsContent currentUser={currentUser} setActiveTab={setActiveTab} />;
     }
 
     switch (activeTab) {
@@ -114,7 +134,9 @@ function Content({ activeTab, setActiveTab, currentUser, location }) {
         case 'take quiz':
             return <TakeQuizContent currentUser={currentUser} />;
         case 'results':
-            return <ResultsContent currentUser={currentUser} />;
+            return <ResultsContent currentUser={currentUser} setActiveTab={setActiveTab} />;
+        case 'leaderboard':
+            return <LeaderboardContent currentUser={currentUser} />;
         case 'settings':
             return <SettingsContent currentUser={currentUser} />;
         default:
@@ -424,7 +446,7 @@ function TakeQuizContent({ currentUser }) {
     );
 }
 
-function ResultsContent({ currentUser }) {
+function ResultsContent({ currentUser, setActiveTab }) {
     const [quizCode, setQuizCode] = useState('');
     const [quizResult, setQuizResult] = useState(null);
     const [error, setError] = useState('');
@@ -432,6 +454,7 @@ function ResultsContent({ currentUser }) {
     const [retestMessage, setRetestMessage] = useState('');
     const [retestLoading, setRetestLoading] = useState(false);
     const { quizCode: urlQuizCode } = useParams();
+    const navigate = useNavigate();
 
     useEffect(() => {
         if (!urlQuizCode) {
@@ -463,25 +486,33 @@ function ResultsContent({ currentUser }) {
         }
     }, [urlQuizCode, currentUser?.id]);
 
-    const handleQuizCodeSubmit = async (e) => {
+    const handleQuizCodeSubmit = (e) => {
         e.preventDefault();
         if (quizCode) {
-            const fetchQuizResult = async () => {
-                setLoading(true);
-                setError('');
-                try {
-                    const response = await axios.get(`${API_BASE_URL}/quiz-result/${quizCode}/${currentUser.id}`);
-                    if (response.status !== 200) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
-                    setQuizResult(response.data);
-                } catch (error) {
-                    setError('An error occurred while fetching the quiz result.');
-                } finally {
-                    setLoading(false);
+            navigate(`/student-dashboard/quiz/${quizCode}`);
+        }
+    };
+
+    const handleCheckLeaderboard = async () => {
+        console.log('Check Leaderboard button clicked');
+        console.log('quizResult:', quizResult);
+        if (quizResult?.quiz_id) {
+            try {
+                const response = await axios.get(`${API_BASE_URL}/quizzes/id/${quizResult.quiz_id}`);
+                if (response.data?.quiz_code) {
+                    console.log('Navigating to leaderboard with quiz code:', response.data.quiz_code);
+                    setActiveTab('leaderboard');
+                    navigate(`/student-dashboard/leaderboard/${response.data.quiz_code}`, {
+                        state: { activeTab: 'leaderboard' }
+                    });
+                } else {
+                    console.log('No quiz code found in response');
                 }
-            };
-            fetchQuizResult();
+            } catch (error) {
+                console.error('Error fetching quiz code:', error);
+            }
+        } else {
+            console.log('No quiz_id found in quizResult');
         }
     };
 
@@ -489,13 +520,6 @@ function ResultsContent({ currentUser }) {
         setRetestLoading(true);
         setRetestMessage('');
         try {
-            console.log('Quiz Result:', quizResult);
-            console.log('Request Data:', {
-                student_id: currentUser.id,
-                quiz_id: quizResult.quiz_id,
-                attempt_id: attemptId
-            });
-            
             const response = await axios.post(`${API_BASE_URL}/retest-requests`, {
                 student_id: currentUser.id,
                 quiz_id: quizResult.quiz_id,
@@ -550,14 +574,22 @@ function ResultsContent({ currentUser }) {
                         </div>
                     </div>
                 ))}
-                {!retestLoading && !retestMessage && (
+                <div className="button-container">
                     <button
-                        onClick={() => handleRequestRetest(quizResult.quizCode, quizResult.attemptId)}
-                        className="request-retest-btn"
+                        onClick={handleCheckLeaderboard}
+                        className="check-leaderboard-btn"
                     >
-                        Request Retest
+                        Check Leaderboard
                     </button>
-                )}
+                    {!retestLoading && !retestMessage && (
+                        <button
+                            onClick={() => handleRequestRetest(quizResult.quiz_code, quizResult.attemptId)}
+                            className="request-retest-btn"
+                        >
+                            Request Retest
+                        </button>
+                    )}
+                </div>
                 {retestMessage && (
                     <div className={`retest-message ${retestMessage.includes('success') ? 'success' : 'error'}`}>
                         {retestMessage}
@@ -587,6 +619,128 @@ function ResultsContent({ currentUser }) {
                 )}
                 {error && <div className="error-message">{error}</div>}
                 {loading ? <div className="loading">Loading results...</div> : renderQuizResult()}
+            </div>
+        </div>
+    );
+}
+
+function LeaderboardContent({ currentUser }) {
+    const [leaderboardData, setLeaderboardData] = useState(null);
+    const [quizCode, setQuizCode] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const navigate = useNavigate();
+    const { quizCode: urlQuizCode } = useParams();
+
+    useEffect(() => {
+        if (urlQuizCode) {
+            setQuizCode(urlQuizCode);
+            fetchLeaderboard(urlQuizCode);
+        }
+    }, [urlQuizCode]);
+
+    const fetchLeaderboard = async (code) => {
+        setLoading(true);
+        setError('');
+        try {
+            const response = await axios.get(`${API_BASE_URL}/quiz-results/${code}/leaderboard`);
+            if (response.status !== 200) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            setLeaderboardData(response.data);
+        } catch (error) {
+            console.error('Error fetching leaderboard:', error);
+            setError(error.response?.data?.message || 'Failed to fetch leaderboard data');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleQuizCodeSubmit = async (e) => {
+        e.preventDefault();
+        if (quizCode) {
+            navigate(`/student-dashboard/leaderboard/${quizCode}`);
+        }
+    };
+
+    const filteredRankings = leaderboardData?.rankings.filter(student =>
+        student.student_name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    return (
+        <div className="content">
+            <div className="leaderboard-content">
+                <div className="leaderboard-header">
+                    <h2>Quiz Leaderboard</h2>
+                </div>
+
+                {!urlQuizCode ? (
+                    <div className="leaderboard-search-container">
+                        <form onSubmit={handleQuizCodeSubmit} className="leaderboard-search-form">
+                            <div className="search-input-wrapper">
+                                <input
+                                    type="text"
+                                    placeholder="Enter Quiz Code"
+                                    value={quizCode}
+                                    onChange={(e) => setQuizCode(e.target.value)}
+                                    className="quiz-code-input"
+                                />
+                                <button type="submit" className="view-leaderboard-btn" disabled={loading}>
+                                    {loading ? 'Loading...' : 'View Leaderboard'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                ) : (
+                    <>
+                        {error && <div className="error-message">{error}</div>}
+                        {loading ? (
+                            <div className="loading">Loading leaderboard...</div>
+                        ) : leaderboardData ? (
+                            <div className="leaderboard-container">
+                                <div className="quiz-info-card">
+                                    <h3>{leaderboardData.quiz_name}</h3>
+                                    <p>Total Participants: {leaderboardData.rankings.length}</p>
+                                </div>
+
+                                <div className="leaderboard-search-box">
+                                    <input
+                                        type="text"
+                                        placeholder="Search by student name..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="student-search-input"
+                                    />
+                                </div>
+
+                                <div className="leaderboard-table-section">
+                                    <table className="leaderboard-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Rank</th>
+                                                <th>Name</th>
+                                                <th>Score</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {filteredRankings.map((student) => (
+                                                <tr 
+                                                    key={student.student_id} 
+                                                    className={student.student_id === currentUser.id ? 'current-user' : ''}
+                                                >
+                                                    <td>{student.rank}</td>
+                                                    <td>{student.student_name}</td>
+                                                    <td>{student.score}%</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        ) : null}
+                    </>
+                )}
             </div>
         </div>
     );

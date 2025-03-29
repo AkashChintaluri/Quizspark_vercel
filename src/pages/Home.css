@@ -156,6 +156,9 @@
     margin-top: 3rem;
     color: #666;
     font-size: 1rem;
+    width: 100%;
+    display: flex;
+    justify-content: center;
 }
 
 @media (max-width: 768px) {

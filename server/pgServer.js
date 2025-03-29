@@ -229,6 +229,33 @@ function startServer() {
         }
     });
 
+    app.get('/api/quizzes/id/:quiz_id', async (req, res) => {
+        const { quiz_id } = req.params;
+
+        try {
+            const query = `
+                SELECT quiz_id, quiz_code, quiz_name
+                FROM quizzes
+                WHERE quiz_id = $1;
+            `;
+            const result = await pool.query(query, [quiz_id]);
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ message: 'Quiz not found' });
+            }
+
+            const quiz = result.rows[0];
+            res.status(200).json({
+                quiz_id: quiz.quiz_id,
+                quiz_code: quiz.quiz_code,
+                quiz_name: quiz.quiz_name
+            });
+        } catch (error) {
+            console.error('Error fetching quiz:', error);
+            res.status(500).json({ message: 'Failed to fetch quiz', error: error.message });
+        }
+    });
+
     app.post('/api/submit-quiz', async (req, res) => {
         const { quiz_code, user_id, answers } = req.body;
         try {
@@ -700,6 +727,73 @@ function startServer() {
         } catch (error) {
             console.error('Error updating student profile:', error);
             res.status(500).json({ message: 'Failed to update profile' });
+        }
+    });
+
+    app.get('/api/quiz-results/:quiz_code/leaderboard', async (req, res) => {
+        const { quiz_code } = req.params;
+
+        try {
+            // First get the quiz details
+            const quizQuery = `
+                SELECT quiz_id, quiz_name
+                FROM quizzes
+                WHERE quiz_code = $1;
+            `;
+            const quizResult = await pool.query(quizQuery, [quiz_code]);
+
+            if (quizResult.rows.length === 0) {
+                return res.status(404).json({ message: 'Quiz not found' });
+            }
+
+            const quizId = quizResult.rows[0].quiz_id;
+            const quizName = quizResult.rows[0].quiz_name;
+
+            // Then get the leaderboard data with NULL handling
+            const leaderboardQuery = `
+                WITH RankedResults AS (
+                    SELECT 
+                        qa.user_id,
+                        s.username AS student_name,
+                        COALESCE(qa.score, 0) as score,
+                        COALESCE(qa.total_questions, 1) as total_questions,
+                        qa.attempt_date,
+                        DENSE_RANK() OVER (
+                            ORDER BY 
+                                (CAST(COALESCE(qa.score, 0) AS FLOAT) / NULLIF(COALESCE(qa.total_questions, 1), 0)) DESC,
+                                qa.attempt_date ASC
+                        ) as rank
+                    FROM quiz_attempts qa
+                    JOIN student_login s ON qa.user_id = s.id
+                    WHERE qa.quiz_id = $1
+                )
+                SELECT * FROM RankedResults
+                ORDER BY rank;
+            `;
+            const leaderboardResult = await pool.query(leaderboardQuery, [quizId]);
+
+            if (leaderboardResult.rows.length === 0) {
+                return res.status(404).json({ message: 'No attempts found for this quiz' });
+            }
+
+            // Format the data for the frontend
+            const leaderboardData = {
+                quiz_name: quizName,
+                rankings: leaderboardResult.rows.map(row => ({
+                    student_id: row.user_id,
+                    student_name: row.student_name,
+                    score: Math.round((row.score / row.total_questions) * 100) || 0,
+                    rank: row.rank
+                }))
+            };
+
+            res.json(leaderboardData);
+        } catch (error) {
+            console.error('Error fetching leaderboard:', error);
+            res.status(500).json({ 
+                error: 'Failed to fetch leaderboard data',
+                details: error.message 
+            });
         }
     });
 
