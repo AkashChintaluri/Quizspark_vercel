@@ -8,6 +8,16 @@
   ],
   "routes": [
     {
+      "src": "/api/(.*)",
+      "dest": "pgServer.js",
+      "headers": {
+        "Access-Control-Allow-Origin": "https://quizspark-smoky.vercel.app",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Credentials": "true"
+      }
+    },
+    {
       "src": "/(.*)",
       "dest": "pgServer.js",
       "headers": {
@@ -17,5 +27,8 @@
         "Access-Control-Allow-Credentials": "true"
       }
     }
-  ]
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
 } 

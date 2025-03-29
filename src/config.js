@@ -24,5 +24,14 @@ const api = axios.create({
   }
 });
 
+// Add response interceptor for better error handling
+api.interceptors.response.use(
+  response => response,
+  error => {
+    console.error('API Error:', error);
+    return Promise.reject(error);
+  }
+);
+
 export const API_URL = getApiUrl();
 export default api; 

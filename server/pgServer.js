@@ -8,6 +8,11 @@ dotenv.config();
 
 const app = express();
 
+// Add health check endpoint
+app.get('/', (req, res) => {
+    res.json({ status: 'ok', message: 'QuizSpark API is running' });
+});
+
 // Configure CORS
 app.use(cors({
     origin: 'https://quizspark-smoky.vercel.app',
@@ -22,21 +27,15 @@ app.options('*', cors());
 
 app.use(express.json());
 
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL
-});
-
-// Test the database connection
-pool.query('SELECT NOW()')
-    .then(res => {
-        console.log('Connected to database');
-        console.log('Current time:', res.rows[0].now);
-        startServer();
-    })
-    .catch(err => {
-        console.error('Error connecting to the database', err);
-        process.exit(1);
+// Create a new pool for each request
+const getPool = () => {
+    return new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: {
+            rejectUnauthorized: false
+        }
     });
+};
 
 // Error logging middleware
 app.use((err, req, res, next) => {
@@ -50,18 +49,35 @@ app.use((req, res, next) => {
     next();
 });
 
+// Wrap all database operations in a try-catch block
+const handleDatabaseOperation = async (operation) => {
+    const pool = getPool();
+    try {
+        const result = await operation(pool);
+        return result;
+    } catch (error) {
+        console.error('Database operation error:', error);
+        throw error;
+    } finally {
+        await pool.end();
+    }
+};
+
 function startServer() {
     app.post('/signup', async (req, res) => {
         const { username, email, password, userType } = req.body;
         const table = userType === 'student' ? 'student_login' : 'teacher_login';
 
         try {
-            const query = `
-                INSERT INTO ${table} (username, email, password)
-                VALUES ($1, $2, $3)
-                RETURNING id
-            `;
-            const result = await pool.query(query, [username, email, password]);
+            const result = await handleDatabaseOperation(async (pool) => {
+                const query = `
+                    INSERT INTO ${table} (username, email, password)
+                    VALUES ($1, $2, $3)
+                    RETURNING id
+                `;
+                return await pool.query(query, [username, email, password]);
+            });
+
             res.status(201).json({
                 message: 'User registered successfully',
                 userId: result.rows[0].id
@@ -77,12 +93,14 @@ function startServer() {
         const table = userType === 'student' ? 'student_login' : 'teacher_login';
 
         try {
-            const query = `
-                SELECT id, username, email 
-                FROM ${table} 
-                WHERE username = $1 AND password = $2
-            `;
-            const result = await pool.query(query, [username, password]);
+            const result = await handleDatabaseOperation(async (pool) => {
+                const query = `
+                    SELECT id, username, email 
+                    FROM ${table} 
+                    WHERE username = $1 AND password = $2
+                `;
+                return await pool.query(query, [username, password]);
+            });
 
             if (result.rows.length > 0) {
                 res.json({
@@ -110,7 +128,9 @@ function startServer() {
                 SELECT id FROM ${table} 
                 WHERE username = $1 AND password = $2
             `;
-            const verifyResult = await pool.query(verifyQuery, [username, currentPassword]);
+            const verifyResult = await handleDatabaseOperation(async (pool) => {
+                return await pool.query(verifyQuery, [username, currentPassword]);
+            });
 
             if (verifyResult.rows.length === 0) {
                 return res.status(401).json({ success: false, message: 'Invalid credentials' });
@@ -121,7 +141,9 @@ function startServer() {
                 SET password = $1 
                 WHERE username = $2
             `;
-            await pool.query(updateQuery, [newPassword, username]);
+            await handleDatabaseOperation(async (pool) => {
+                await pool.query(updateQuery, [newPassword, username]);
+            });
             res.json({ success: true, message: 'Password updated' });
         } catch (error) {
             console.error('Password change error:', error);
@@ -134,12 +156,14 @@ function startServer() {
         const table = userType === 'student' ? 'student_login' : 'teacher_login';
 
         try {
-            const query = `
-                SELECT id, username, email 
-                FROM ${table} 
-                WHERE id = $1
-            `;
-            const result = await pool.query(query, [userId]);
+            const result = await handleDatabaseOperation(async (pool) => {
+                const query = `
+                    SELECT id, username, email 
+                    FROM ${table} 
+                    WHERE id = $1
+                `;
+                return await pool.query(query, [userId]);
+            });
 
             if (result.rows.length > 0) {
                 res.json({ ...result.rows[0], userType });
@@ -166,7 +190,9 @@ function startServer() {
                 INNER JOIN subscriptions s ON t.id = s.teacher_id
                 WHERE s.student_id = $1;
             `;
-            const result = await pool.query(query, [studentIdInt]);
+            const result = await handleDatabaseOperation(async (pool) => {
+                return await pool.query(query, [studentIdInt]);
+            });
             res.json(result.rows);
         } catch (error) {
             console.error('Error fetching subscriptions:', error);
@@ -178,13 +204,16 @@ function startServer() {
         const { quiz_name, quiz_code, created_by, questions, due_date } = req.body;
 
         try {
-            const query = `
-                INSERT INTO quizzes (quiz_name, quiz_code, created_by, questions, due_date)
-                VALUES ($1, $2, $3, $4::jsonb, $5)
-                RETURNING quiz_id;
-            `;
-            const values = [quiz_name, quiz_code, created_by, JSON.stringify({ questions }), due_date];
-            const result = await pool.query(query, values);
+            const result = await handleDatabaseOperation(async (pool) => {
+                const query = `
+                    INSERT INTO quizzes (quiz_name, quiz_code, created_by, questions, due_date)
+                    VALUES ($1, $2, $3, $4::jsonb, $5)
+                    RETURNING quiz_id;
+                `;
+                const values = [quiz_name, quiz_code, created_by, JSON.stringify({ questions }), due_date];
+                return await pool.query(query, values);
+            });
+
             const quizId = result.rows[0].quiz_id;
 
             res.status(201).json({
@@ -202,14 +231,16 @@ function startServer() {
         const { quiz_name, due_date, questions } = req.body;
 
         try {
-            const query = `
-                UPDATE quizzes
-                SET quiz_name = $1, due_date = $2, questions = $3::jsonb
-                WHERE quiz_id = $4
-                RETURNING quiz_id;
-            `;
-            const values = [quiz_name, due_date, JSON.stringify(questions), quiz_id];
-            const result = await pool.query(query, values);
+            const result = await handleDatabaseOperation(async (pool) => {
+                const query = `
+                    UPDATE quizzes
+                    SET quiz_name = $1, due_date = $2, questions = $3::jsonb
+                    WHERE quiz_id = $4
+                    RETURNING quiz_id;
+                `;
+                const values = [quiz_name, due_date, JSON.stringify(questions), quiz_id];
+                return await pool.query(query, values);
+            });
 
             if (result.rows.length === 0) {
                 return res.status(404).json({ message: 'Quiz not found' });
@@ -226,12 +257,14 @@ function startServer() {
         const { quiz_code } = req.params;
 
         try {
-            const query = `
-                SELECT quiz_id, quiz_name, questions
-                FROM quizzes
-                WHERE quiz_code = $1;
-            `;
-            const result = await pool.query(query, [quiz_code]);
+            const result = await handleDatabaseOperation(async (pool) => {
+                const query = `
+                    SELECT quiz_id, quiz_name, questions
+                    FROM quizzes
+                    WHERE quiz_code = $1;
+                `;
+                return await pool.query(query, [quiz_code]);
+            });
 
             if (result.rows.length === 0) {
                 return res.status(404).json({ message: 'Quiz not found' });
@@ -253,12 +286,14 @@ function startServer() {
         const { quiz_id } = req.params;
 
         try {
-            const query = `
-                SELECT quiz_id, quiz_code, quiz_name
-                FROM quizzes
-                WHERE quiz_id = $1;
-            `;
-            const result = await pool.query(query, [quiz_id]);
+            const result = await handleDatabaseOperation(async (pool) => {
+                const query = `
+                    SELECT quiz_id, quiz_code, quiz_name
+                    FROM quizzes
+                    WHERE quiz_id = $1;
+                `;
+                return await pool.query(query, [quiz_id]);
+            });
 
             if (result.rows.length === 0) {
                 return res.status(404).json({ message: 'Quiz not found' });
@@ -279,39 +314,41 @@ function startServer() {
     app.post('/api/submit-quiz', async (req, res) => {
         const { quiz_code, user_id, answers } = req.body;
         try {
-            const quizQuery = `
-                SELECT quiz_id, questions
-                FROM quizzes
-                WHERE quiz_code = $1;
-            `;
-            const quizResult = await pool.query(quizQuery, [quiz_code]);
-            if (quizResult.rows.length === 0) {
-                return res.status(404).json({ message: 'Quiz not found' });
-            }
-
-            const quiz = quizResult.rows[0];
-            const questions = quiz.questions.questions;
-
-            let score = 0;
-            let totalQuestions = questions.length;
-
-            questions.forEach((question, index) => {
-                const correctAnswerIndex = question.options.findIndex(option => option.is_correct);
-                const userAnswer = parseInt(answers[index]);
-                if (correctAnswerIndex === userAnswer) {
-                    score++;
+            const result = await handleDatabaseOperation(async (pool) => {
+                const quizQuery = `
+                    SELECT quiz_id, questions
+                    FROM quizzes
+                    WHERE quiz_code = $1;
+                `;
+                const quizResult = await pool.query(quizQuery, [quiz_code]);
+                if (quizResult.rows.length === 0) {
+                    return res.status(404).json({ message: 'Quiz not found' });
                 }
+
+                const quiz = quizResult.rows[0];
+                const questions = quiz.questions.questions;
+
+                let score = 0;
+                let totalQuestions = questions.length;
+
+                questions.forEach((question, index) => {
+                    const correctAnswerIndex = question.options.findIndex(option => option.is_correct);
+                    const userAnswer = parseInt(answers[index]);
+                    if (correctAnswerIndex === userAnswer) {
+                        score++;
+                    }
+                });
+
+                const insertQuery = `
+                    INSERT INTO quiz_attempts (quiz_id, user_id, score, total_questions, answers)
+                    VALUES ($1, $2, $3, $4, $5)
+                    RETURNING attempt_id;
+                `;
+                const insertValues = [quiz.quiz_id, user_id, score, totalQuestions, JSON.stringify(answers)];
+                return await pool.query(insertQuery, insertValues);
             });
 
-            const insertQuery = `
-                INSERT INTO quiz_attempts (quiz_id, user_id, score, total_questions, answers)
-                VALUES ($1, $2, $3, $4, $5)
-                RETURNING attempt_id;
-            `;
-            const insertValues = [quiz.quiz_id, user_id, score, totalQuestions, JSON.stringify(answers)];
-            const insertResult = await pool.query(insertQuery, insertValues);
-
-            const attemptId = insertResult.rows[0].attempt_id;
+            const attemptId = result.rows[0].attempt_id;
 
             res.status(201).json({ attemptId, score, totalQuestions });
         } catch (error) {
@@ -324,21 +361,23 @@ function startServer() {
         const { quiz_code, user_id } = req.params;
 
         try {
-            const quizQuery = `
-                SELECT q.quiz_id, q.quiz_name, q.questions, qa.attempt_id, qa.answers, qa.score, qa.total_questions
-                FROM quizzes q
-                LEFT JOIN quiz_attempts qa ON q.quiz_id = qa.quiz_id AND qa.user_id = $2
-                WHERE q.quiz_code = $1
-                ORDER BY qa.attempt_date DESC
-                LIMIT 1;
-            `;
-            const quizResult = await pool.query(quizQuery, [quiz_code, user_id]);
+            const result = await handleDatabaseOperation(async (pool) => {
+                const quizQuery = `
+                    SELECT q.quiz_id, q.quiz_name, q.questions, qa.attempt_id, qa.answers, qa.score, qa.total_questions
+                    FROM quizzes q
+                    LEFT JOIN quiz_attempts qa ON q.quiz_id = qa.quiz_id AND qa.user_id = $2
+                    WHERE q.quiz_code = $1
+                    ORDER BY qa.attempt_date DESC
+                    LIMIT 1;
+                `;
+                return await pool.query(quizQuery, [quiz_code, user_id]);
+            });
 
-            if (quizResult.rows.length === 0) {
+            if (result.rows.length === 0) {
                 return res.status(404).json({ message: 'Quiz not found' });
             }
 
-            const quizData = quizResult.rows[0];
+            const quizData = result.rows[0];
             const questions = quizData.questions.questions;
 
             let userAnswers = {};
@@ -379,27 +418,29 @@ function startServer() {
         const { quizCode, userId } = req.params;
 
         try {
-            const quizQuery = 'SELECT quiz_id FROM quizzes WHERE quiz_code = $1';
-            const quizResult = await pool.query(quizQuery, [quizCode]);
+            const result = await handleDatabaseOperation(async (pool) => {
+                const quizQuery = 'SELECT quiz_id FROM quizzes WHERE quiz_code = $1';
+                const quizResult = await pool.query(quizQuery, [quizCode]);
 
-            if (quizResult.rows.length === 0) {
-                return res.status(404).json({ message: 'Quiz not found' });
-            }
+                if (quizResult.rows.length === 0) {
+                    return res.status(404).json({ message: 'Quiz not found' });
+                }
 
-            const quizId = quizResult.rows[0].quiz_id;
+                const quizId = quizResult.rows[0].quiz_id;
 
-            const attemptQuery = `
-                SELECT qa.*, rr.status 
-                FROM quiz_attempts qa
-                LEFT JOIN retest_requests rr ON qa.attempt_id = rr.attempt_id
-                WHERE qa.quiz_id = $1 AND qa.user_id = $2
-                ORDER BY qa.attempt_date DESC
-                LIMIT 1
-            `;
-            const attemptResult = await pool.query(attemptQuery, [quizId, userId]);
+                const attemptQuery = `
+                    SELECT qa.*, rr.status 
+                    FROM quiz_attempts qa
+                    LEFT JOIN retest_requests rr ON qa.attempt_id = rr.attempt_id
+                    WHERE qa.quiz_id = $1 AND qa.user_id = $2
+                    ORDER BY qa.attempt_date DESC
+                    LIMIT 1
+                `;
+                return await pool.query(attemptQuery, [quizId, userId]);
+            });
 
-            if (attemptResult.rows.length > 0) {
-                const latestAttempt = attemptResult.rows[0];
+            if (result.rows.length > 0) {
+                const latestAttempt = result.rows[0];
                 const canRetake = latestAttempt.status === 'approved';
                 res.json({
                     hasAttempted: !canRetake,
@@ -418,15 +459,17 @@ function startServer() {
     app.get('/api/recent-results/:user_id', async (req, res) => {
         const { user_id } = req.params;
         try {
-            const query = `
-                SELECT q.quiz_name, qa.attempt_id, qa.score, qa.total_questions, qa.attempt_date
-                FROM quiz_attempts qa
-                JOIN quizzes q ON q.quiz_id = qa.quiz_id
-                WHERE qa.user_id = $1
-                ORDER BY qa.attempt_date DESC
-                LIMIT 5;
-            `;
-            const result = await pool.query(query, [user_id]);
+            const result = await handleDatabaseOperation(async (pool) => {
+                const query = `
+                    SELECT q.quiz_name, qa.attempt_id, qa.score, qa.total_questions, qa.attempt_date
+                    FROM quiz_attempts qa
+                    JOIN quizzes q ON q.quiz_id = qa.quiz_id
+                    WHERE qa.user_id = $1
+                    ORDER BY qa.attempt_date DESC
+                    LIMIT 5;
+                `;
+                return await pool.query(query, [user_id]);
+            });
             res.json(result.rows);
         } catch (error) {
             console.error('Error fetching recent results:', error);
@@ -437,15 +480,17 @@ function startServer() {
     app.get('/api/user-stats/:user_id', async (req, res) => {
         const { user_id } = req.params;
         try {
-            const query = `
-                SELECT 
-                    COUNT(*) as total_attempts,
-                    COALESCE(AVG(CAST(score AS FLOAT) / total_questions * 100), 0) as average_score,
-                    COUNT(DISTINCT quiz_id) as completed_quizzes
-                FROM quiz_attempts
-                WHERE user_id = $1;
-            `;
-            const result = await pool.query(query, [user_id]);
+            const result = await handleDatabaseOperation(async (pool) => {
+                const query = `
+                    SELECT 
+                        COUNT(*) as total_attempts,
+                        COALESCE(AVG(CAST(score AS FLOAT) / total_questions * 100), 0) as average_score,
+                        COUNT(DISTINCT quiz_id) as completed_quizzes
+                    FROM quiz_attempts
+                    WHERE user_id = $1;
+                `;
+                return await pool.query(query, [user_id]);
+            });
             res.json(result.rows[0]);
         } catch (error) {
             console.error('Error fetching user stats:', error);
@@ -455,10 +500,12 @@ function startServer() {
 
     app.get('/api/teachers', async (req, res) => {
         try {
-            const result = await pool.query(`
-                SELECT id AS id, username, email 
-                FROM teacher_login
-            `);
+            const result = await handleDatabaseOperation(async (pool) => {
+                return await pool.query(`
+                    SELECT id AS id, username, email 
+                    FROM teacher_login
+                `);
+            });
             res.json(result.rows);
         } catch (error) {
             console.error('Error fetching teachers:', error);
@@ -469,11 +516,13 @@ function startServer() {
     app.post('/api/subscribe', async (req, res) => {
         const { student_id, teacher_id } = req.body;
         try {
-            await pool.query(`
-                INSERT INTO subscriptions (student_id, teacher_id)
-                VALUES ($1, $2)
-                ON CONFLICT (student_id, teacher_id) DO NOTHING
-            `, [student_id, teacher_id]);
+            await handleDatabaseOperation(async (pool) => {
+                await pool.query(`
+                    INSERT INTO subscriptions (student_id, teacher_id)
+                    VALUES ($1, $2)
+                    ON CONFLICT (student_id, teacher_id) DO NOTHING
+                `, [student_id, teacher_id]);
+            });
             res.json({ success: true });
         } catch (error) {
             console.error('Subscription error:', error);
@@ -484,10 +533,12 @@ function startServer() {
     app.post('/api/unsubscribe', async (req, res) => {
         const { student_id, teacher_id } = req.body;
         try {
-            await pool.query(`
-                DELETE FROM subscriptions 
-                WHERE student_id = $1 AND teacher_id = $2
-            `, [student_id, teacher_id]);
+            await handleDatabaseOperation(async (pool) => {
+                await pool.query(`
+                    DELETE FROM subscriptions 
+                    WHERE student_id = $1 AND teacher_id = $2
+                `, [student_id, teacher_id]);
+            });
             res.json({ success: true });
         } catch (error) {
             console.error('Unsubscription error:', error);
@@ -498,25 +549,27 @@ function startServer() {
     app.get('/api/upcoming-quizzes/:student_id', async (req, res) => {
         const { student_id } = req.params;
         try {
-            const query = `
-                SELECT q.*, t.username AS teacher_name
-                FROM quizzes q
-                JOIN teacher_login t ON q.created_by = t.id
-                WHERE q.created_by IN (
-                    SELECT teacher_id 
-                    FROM subscriptions 
-                    WHERE student_id = $1
-                )
-                AND q.due_date > NOW()
-                AND NOT EXISTS (
-                    SELECT 1 
-                    FROM quiz_attempts 
-                    WHERE quiz_id = q.quiz_id 
-                    AND user_id = $1
-                )
-                ORDER BY q.due_date ASC
-            `;
-            const result = await pool.query(query, [student_id]);
+            const result = await handleDatabaseOperation(async (pool) => {
+                const query = `
+                    SELECT q.*, t.username AS teacher_name
+                    FROM quizzes q
+                    JOIN teacher_login t ON q.created_by = t.id
+                    WHERE q.created_by IN (
+                        SELECT teacher_id 
+                        FROM subscriptions 
+                        WHERE student_id = $1
+                    )
+                    AND q.due_date > NOW()
+                    AND NOT EXISTS (
+                        SELECT 1 
+                        FROM quiz_attempts 
+                        WHERE quiz_id = q.quiz_id 
+                        AND user_id = $1
+                    )
+                    ORDER BY q.due_date ASC
+                `;
+                return await pool.query(query, [student_id]);
+            });
             res.json(result.rows);
         } catch (error) {
             console.error('Error fetching quizzes:', error);
@@ -527,14 +580,16 @@ function startServer() {
     app.get('/api/attempted-quizzes/:user_id', async (req, res) => {
         const { user_id } = req.params;
         try {
-            const query = `
-                SELECT DISTINCT q.quiz_id, q.quiz_name, q.quiz_code, t.username AS teacher_name, q.due_date
-                FROM quiz_attempts qa
-                JOIN quizzes q ON qa.quiz_id = q.quiz_id
-                JOIN teacher_login t ON q.created_by = t.id
-                WHERE qa.user_id = $1;
-            `;
-            const result = await pool.query(query, [user_id]);
+            const result = await handleDatabaseOperation(async (pool) => {
+                const query = `
+                    SELECT DISTINCT q.quiz_id, q.quiz_name, q.quiz_code, t.username AS teacher_name, q.due_date
+                    FROM quiz_attempts qa
+                    JOIN quizzes q ON qa.quiz_id = q.quiz_id
+                    JOIN teacher_login t ON q.created_by = t.id
+                    WHERE qa.user_id = $1;
+                `;
+                return await pool.query(query, [user_id]);
+            });
             res.json(result.rows);
         } catch (error) {
             console.error('Error fetching attempted quizzes:', error);
@@ -545,13 +600,15 @@ function startServer() {
     app.get('/api/quizzes/created/:user_id', async (req, res) => {
         const { user_id } = req.params;
         try {
-            const query = `
-                SELECT quiz_id, quiz_name, quiz_code, questions, due_date, created_at
-                FROM quizzes
-                WHERE created_by = $1
-                ORDER BY created_at DESC
-            `;
-            const result = await pool.query(query, [user_id]);
+            const result = await handleDatabaseOperation(async (pool) => {
+                const query = `
+                    SELECT quiz_id, quiz_name, quiz_code, questions, due_date, created_at
+                    FROM quizzes
+                    WHERE created_by = $1
+                    ORDER BY created_at DESC
+                `;
+                return await pool.query(query, [user_id]);
+            });
             res.json(result.rows);
         } catch (error) {
             console.error('Error fetching created quizzes:', error);
@@ -563,25 +620,27 @@ function startServer() {
         const { quiz_code } = req.params;
 
         try {
-            const query = `
-                SELECT 
-                    qa.attempt_id,
-                    qa.user_id,
-                    s.username AS student_username,
-                    qa.score,
-                    qa.total_questions,
-                    qa.attempt_date,
-                    q.quiz_name,
-                    rr.request_id,
-                    rr.status AS retest_status
-                FROM quiz_attempts qa
-                JOIN quizzes q ON qa.quiz_id = q.quiz_id
-                JOIN student_login s ON qa.user_id = s.id
-                LEFT JOIN retest_requests rr ON qa.attempt_id = rr.attempt_id
-                WHERE q.quiz_code = $1
-                ORDER BY qa.attempt_date DESC;
-            `;
-            const result = await pool.query(query, [quiz_code]);
+            const result = await handleDatabaseOperation(async (pool) => {
+                const query = `
+                    SELECT 
+                        qa.attempt_id,
+                        qa.user_id,
+                        s.username AS student_username,
+                        qa.score,
+                        qa.total_questions,
+                        qa.attempt_date,
+                        q.quiz_name,
+                        rr.request_id,
+                        rr.status AS retest_status
+                    FROM quiz_attempts qa
+                    JOIN quizzes q ON qa.quiz_id = q.quiz_id
+                    JOIN student_login s ON qa.user_id = s.id
+                    LEFT JOIN retest_requests rr ON qa.attempt_id = rr.attempt_id
+                    WHERE q.quiz_code = $1
+                    ORDER BY qa.attempt_date DESC;
+                `;
+                return await pool.query(query, [quiz_code]);
+            });
 
             if (result.rows.length === 0) {
                 return res.status(404).json({ message: 'No attempts found for this quiz' });
@@ -605,13 +664,15 @@ function startServer() {
                 return res.status(400).json({ error: 'quiz_id is required' });
             }
 
-            const result = await pool.query(
-                `INSERT INTO retest_requests 
-                 (student_id, quiz_id, attempt_id) 
-                 VALUES ($1, $2, $3) 
-                 RETURNING *`,
-                [student_id, quiz_id, attempt_id]
-            );
+            const result = await handleDatabaseOperation(async (pool) => {
+                return await pool.query(
+                    `INSERT INTO retest_requests 
+                     (student_id, quiz_id, attempt_id) 
+                     VALUES ($1, $2, $3) 
+                     RETURNING *`,
+                    [student_id, quiz_id, attempt_id]
+                );
+            });
             res.status(201).json(result.rows[0]);
         } catch (error) {
             console.error('Error creating retest request:', error);
@@ -622,24 +683,26 @@ function startServer() {
     app.get('/api/retest-requests/teacher/:teacher_id', async (req, res) => {
         try {
             const { teacher_id } = req.params;
-            const query = `
-                SELECT 
-                    rr.request_id,
-                    rr.student_id,
-                    sl.username AS student_name,
-                    q.quiz_id,
-                    q.quiz_name,
-                    q.quiz_code,
-                    rr.attempt_id,
-                    rr.request_date,
-                    rr.status
-                FROM retest_requests rr
-                JOIN student_login sl ON rr.student_id = sl.id
-                JOIN quizzes q ON rr.quiz_id = q.quiz_id
-                WHERE q.created_by = $1
-                ORDER BY rr.request_date DESC
-            `;
-            const result = await pool.query(query, [teacher_id]);
+            const result = await handleDatabaseOperation(async (pool) => {
+                const query = `
+                    SELECT 
+                        rr.request_id,
+                        rr.student_id,
+                        sl.username AS student_name,
+                        q.quiz_id,
+                        q.quiz_name,
+                        q.quiz_code,
+                        rr.attempt_id,
+                        rr.request_date,
+                        rr.status
+                    FROM retest_requests rr
+                    JOIN student_login sl ON rr.student_id = sl.id
+                    JOIN quizzes q ON rr.quiz_id = q.quiz_id
+                    WHERE q.created_by = $1
+                    ORDER BY rr.request_date DESC
+                `;
+                return await pool.query(query, [teacher_id]);
+            });
             res.json(result.rows);
         } catch (error) {
             console.error('Error fetching retest requests:', error);
@@ -660,7 +723,9 @@ function startServer() {
             JOIN retest_requests rr ON q.quiz_id = rr.quiz_id
             WHERE rr.request_id = $1
         `;
-            const teacherResult = await pool.query(teacherQuery, [request_id]);
+            const teacherResult = await handleDatabaseOperation(async (pool) => {
+                return await pool.query(teacherQuery, [request_id]);
+            });
 
             if (teacherResult.rows.length === 0 || teacherResult.rows[0].password !== teacher_password) {
                 return res.status(401).json({ error: 'Invalid teacher password' });
@@ -674,7 +739,9 @@ function startServer() {
             WHERE request_id = $2
             RETURNING *
         `;
-            const result = await pool.query(updateQuery, [status, request_id]);
+            const result = await handleDatabaseOperation(async (pool) => {
+                return await pool.query(updateQuery, [status, request_id]);
+            });
 
             if (result.rows.length === 0) {
                 return res.status(404).json({ error: 'Retest request not found' });
@@ -683,16 +750,20 @@ function startServer() {
             // If approved, delete the retest request and then the quiz attempt
             if (status === 'approved') {
                 // First, delete the retest request
-                await pool.query(`
+                await handleDatabaseOperation(async (pool) => {
+                    await pool.query(`
                 DELETE FROM retest_requests 
                 WHERE request_id = $1
             `, [request_id]);
+                });
 
                 // Then, delete the quiz attempt
-                await pool.query(`
+                await handleDatabaseOperation(async (pool) => {
+                    await pool.query(`
                 DELETE FROM quiz_attempts 
                 WHERE attempt_id = $1
             `, [result.rows[0].attempt_id]);
+                });
             }
 
             res.json(result.rows[0]);
@@ -707,13 +778,15 @@ function startServer() {
             const { id } = req.params;
             const { email, name } = req.body;
 
-            const query = `
-                UPDATE teacher_login 
-                SET email = $1, username = $2
-                WHERE id = $3
-                RETURNING id, username, email
-            `;
-            const result = await pool.query(query, [email, name, id]);
+            const result = await handleDatabaseOperation(async (pool) => {
+                const query = `
+                    UPDATE teacher_login 
+                    SET email = $1, username = $2
+                    WHERE id = $3
+                    RETURNING id, username, email
+                `;
+                return await pool.query(query, [email, name, id]);
+            });
 
             if (result.rows.length === 0) {
                 return res.status(404).json({ message: 'Teacher not found' });
@@ -731,13 +804,15 @@ function startServer() {
             const { id } = req.params;
             const { email, name } = req.body;
 
-            const query = `
-                UPDATE student_login 
-                SET email = $1, username = $2
-                WHERE id = $3
-                RETURNING id, username, email
-            `;
-            const result = await pool.query(query, [email, name, id]);
+            const result = await handleDatabaseOperation(async (pool) => {
+                const query = `
+                    UPDATE student_login 
+                    SET email = $1, username = $2
+                    WHERE id = $3
+                    RETURNING id, username, email
+                `;
+                return await pool.query(query, [email, name, id]);
+            });
 
             if (result.rows.length === 0) {
                 return res.status(404).json({ message: 'Student not found' });
@@ -760,7 +835,9 @@ function startServer() {
                 FROM quizzes
                 WHERE quiz_code = $1;
             `;
-            const quizResult = await pool.query(quizQuery, [quiz_code]);
+            const quizResult = await handleDatabaseOperation(async (pool) => {
+                return await pool.query(quizQuery, [quiz_code]);
+            });
 
             if (quizResult.rows.length === 0) {
                 return res.status(404).json({ message: 'Quiz not found' });
@@ -790,7 +867,9 @@ function startServer() {
                 SELECT * FROM RankedResults
                 ORDER BY rank;
             `;
-            const leaderboardResult = await pool.query(leaderboardQuery, [quizId]);
+            const leaderboardResult = await handleDatabaseOperation(async (pool) => {
+                return await pool.query(leaderboardQuery, [quizId]);
+            });
 
             if (leaderboardResult.rows.length === 0) {
                 return res.status(404).json({ message: 'No attempts found for this quiz' });
@@ -820,3 +899,11 @@ function startServer() {
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 }
+
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+    startServer();
+}
+
+// For Vercel serverless
+export default app;
