@@ -7,15 +7,19 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const app = express();
-app.use(cors());
+
+// Configure CORS
+app.use(cors({
+    origin: '*', // Allow all origins during development
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
+
 app.use(express.json());
 
 const pool = new Pool({
-    user: process.env.PG_USER,
-    host: process.env.PG_HOST,
-    database: process.env.PG_DB_NAME,
-    password: process.env.PG_PASSWORD,
-    port: process.env.PG_PORT
+    connectionString: process.env.DATABASE_URL
 });
 
 // Test the database connection
@@ -29,6 +33,18 @@ pool.query('SELECT NOW()')
         console.error('Error connecting to the database', err);
         process.exit(1);
     });
+
+// Error logging middleware
+app.use((err, req, res, next) => {
+    console.error('Error:', err);
+    res.status(500).json({ error: 'Internal Server Error', details: err.message });
+});
+
+// Log all requests
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+});
 
 function startServer() {
     app.post('/signup', async (req, res) => {

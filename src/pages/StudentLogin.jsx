@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_URL } from '../config';
 import './Login.css';
 
 function StudentLogin() {
@@ -31,7 +32,7 @@ function StudentLogin() {
         setErrorMessage('');
 
         try {
-            const response = await axios.post('http://localhost:3000/login', {
+            const response = await axios.post(`${API_URL}/login`, {
                 ...formData,
                 userType: 'student'
             });
