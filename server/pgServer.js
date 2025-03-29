@@ -10,7 +10,7 @@ const app = express();
 
 // Configure CORS
 app.use(cors({
-    origin: '*', // Allow all origins during development
+    origin: ['https://quizspark-smoky.vercel.app', 'http://localhost:5173'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
