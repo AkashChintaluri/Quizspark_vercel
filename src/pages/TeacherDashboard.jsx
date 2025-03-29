@@ -655,6 +655,7 @@ function MakeQuizzesContent({ currentUser }) {
 function ResultsContent({ currentUser, initialQuizCode }) {
     const [quizCode, setQuizCode] = useState(initialQuizCode || '');
     const [attempts, setAttempts] = useState([]);
+    const [filteredAttempts, setFilteredAttempts] = useState([]);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [quizName, setQuizName] = useState('');
@@ -670,12 +671,14 @@ function ResultsContent({ currentUser, initialQuizCode }) {
         setLoading(true);
         setError('');
         setAttempts([]);
+        setFilteredAttempts([]);
         setQuizName('');
 
         try {
             const response = await axios.get(`http://localhost:3000/api/quiz-attempts/${code}`);
             if (response.status === 200) {
                 setAttempts(response.data);
+                setFilteredAttempts(response.data);
                 setQuizName(response.data[0]?.quiz_name || 'Quiz Results');
             } else {
                 setError(response.data.message || 'Failed to fetch attempts');
@@ -701,21 +704,27 @@ function ResultsContent({ currentUser, initialQuizCode }) {
         const direction = sortConfig.key === key && sortConfig.direction === 'desc' ? 'asc' : 'desc';
         setSortConfig({ key, direction });
 
-        const sortedAttempts = [...attempts].sort((a, b) => {
+        const sortedAttempts = [...filteredAttempts].sort((a, b) => {
             if (key === 'student_username') {
-                return direction === 'asc' 
-                    ? a[key].localeCompare(b[key]) 
+                return direction === 'asc'
+                    ? a[key].localeCompare(b[key])
                     : b[key].localeCompare(a[key]);
+            } else if (key === 'attempt_date') {
+                const dateA = new Date(a[key]);
+                const dateB = new Date(b[key]);
+                return direction === 'asc'
+                    ? dateA - dateB
+                    : dateB - dateA;
             }
             return direction === 'asc' ? a[key] - b[key] : b[key] - a[key];
         });
-        setAttempts(sortedAttempts);
+        setFilteredAttempts(sortedAttempts);
     };
 
     const exportToCSV = () => {
-        const headers = ['Student,Score,Total Questions,Date'];
-        const rows = attempts.map(a => 
-            `${a.student_username},${a.score},${a.total_questions},${new Date(a.attempt_date).toLocaleString()}`
+        const headers = ['Student,Quiz Name,Score,Total Questions,Correct Answers,Attempt Date,Time Taken (s),Quiz Code,Student ID,Attempt ID'];
+        const rows = filteredAttempts.map(a =>
+            `${a.student_username},${quizName},${a.score},${a.total_questions},${a.correct_answers || 'N/A'},${new Date(a.attempt_date).toLocaleString()},${a.time_taken || 'N/A'},${a.quiz_code},${a.student_id},${a.attempt_id}`
         );
         const csvContent = [headers, ...rows].join('\n');
         const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -727,11 +736,11 @@ function ResultsContent({ currentUser, initialQuizCode }) {
     };
 
     const chartData = {
-        labels: attempts.map((attempt) => attempt.student_username.slice(0, 3).toUpperCase()),
+        labels: filteredAttempts.map((attempt) => attempt.student_username.slice(0, 3).toUpperCase()),
         datasets: [
             {
                 label: 'Score',
-                data: attempts.map((attempt) => attempt.score),
+                data: filteredAttempts.map((attempt) => attempt.score),
                 backgroundColor: 'rgba(79, 70, 229, 0.85)',
                 borderColor: 'rgba(79, 70, 229, 1)',
                 borderWidth: 1,
@@ -750,16 +759,16 @@ function ResultsContent({ currentUser, initialQuizCode }) {
         plugins: {
             legend: { display: false },
             tooltip: {
-                callbacks: { label: (context) => `${context.raw}/${attempts[0]?.total_questions}` },
+                callbacks: { label: (context) => `${context.raw}/${filteredAttempts[0]?.total_questions}` },
             },
         },
     };
 
-    const totalAttempts = attempts.length;
-    const avgScore = attempts.length > 0 
-        ? (attempts.reduce((sum, a) => sum + a.score, 0) / (attempts.length * attempts[0].total_questions) * 100).toFixed(0) 
+    const totalAttempts = filteredAttempts.length;
+    const avgScore = filteredAttempts.length > 0
+        ? (filteredAttempts.reduce((sum, a) => sum + a.score, 0) / (filteredAttempts.length * filteredAttempts[0].total_questions) * 100).toFixed(0)
         : 0;
-    const topScore = attempts.length > 0 ? Math.max(...attempts.map(a => a.score)) : 0;
+    const topScore = filteredAttempts.length > 0 ? Math.max(...filteredAttempts.map(a => a.score)) : 0;
 
     return (
         <div className="content results-content-alt">
@@ -804,7 +813,7 @@ function ResultsContent({ currentUser, initialQuizCode }) {
                     </div>
                 )}
 
-                {!loading && !error && attempts.length === 0 && quizCode && (
+                {!loading && !error && filteredAttempts.length === 0 && quizCode && (
                     <div className="empty-state">
                         <span className="empty-icon">📊</span>
                         <h3 className="empty-title">No Results Found</h3>
@@ -812,7 +821,7 @@ function ResultsContent({ currentUser, initialQuizCode }) {
                     </div>
                 )}
 
-                {!loading && !error && attempts.length > 0 && (
+                {!loading && !error && filteredAttempts.length > 0 && (
                     <div className="results-body-alt">
                         <div className="stats-card-alt">
                             <h3 className="stats-title-alt">Performance Overview</h3>
@@ -857,25 +866,47 @@ function ResultsContent({ currentUser, initialQuizCode }) {
                                     <i>📥</i> Export
                                 </button>
                             </div>
-                            <div className="attempts-list-alt">
-                                {attempts.map((attempt) => (
-                                    <div key={attempt.attempt_id} className="attempt-item-alt">
-                                        <div className="student-info-alt">
-                                            <span className="student-avatar-alt">
-                                                {attempt.student_username.slice(0, 2).toUpperCase()}
-                                            </span>
-                                            <div className="student-details-alt">
-                                                <span className="student-name-alt">{attempt.student_username}</span>
-                                                <span className="attempt-date-alt">
-                                                    {new Date(attempt.attempt_date).toLocaleDateString()}
+                            <div className="attempts-table-alt">
+                                <div className="table-header-alt">
+                                    <div 
+                                        className={`table-cell-alt ${sortConfig.key === 'student_username' ? `active ${sortConfig.direction}-sort` : ''}`}
+                                        onClick={() => handleSort('student_username')}
+                                    >
+                                        Student
+                                    </div>
+                                    <div 
+                                        className={`table-cell-alt ${sortConfig.key === 'score' ? `active ${sortConfig.direction}-sort` : ''}`}
+                                        onClick={() => handleSort('score')}
+                                    >
+                                        Score
+                                    </div>
+                                    <div 
+                                        className={`table-cell-alt ${sortConfig.key === 'attempt_date' ? `active ${sortConfig.direction}-sort` : ''}`}
+                                        onClick={() => handleSort('attempt_date')}
+                                    >
+                                        Attempt Date
+                                    </div>
+                                </div>
+                                <div className="table-body-alt">
+                                    {filteredAttempts.map((attempt) => (
+                                        <div key={attempt.attempt_id} className="table-row-alt">
+                                            <div className="table-cell-alt">
+                                                <div className="student-info-alt">
+                                                    <span className="student-avatar-alt">
+                                                        {attempt.student_username.slice(0, 2).toUpperCase()}
+                                                    </span>
+                                                    <span className="student-name-alt">{attempt.student_username}</span>
+                                                </div>
+                                            </div>
+                                            <div className="table-cell-alt">
+                                                <span className={`score-badge-alt ${attempt.score >= attempt.total_questions * 0.9 ? 'excellent' : attempt.score >= attempt.total_questions * 0.7 ? 'good' : attempt.score >= attempt.total_questions * 0.5 ? 'average' : 'poor'}`}>
+                                                    {attempt.score}/{attempt.total_questions}
                                                 </span>
                                             </div>
+                                            <div className="table-cell-alt">{new Date(attempt.attempt_date).toLocaleString()}</div>
                                         </div>
-                                        <span className={`score-badge-alt ${attempt.score >= attempts[0].total_questions * 0.9 ? 'excellent' : attempt.score >= attempts[0].total_questions * 0.7 ? 'good' : attempt.score >= attempts[0].total_questions * 0.5 ? 'average' : 'poor'}`}>
-                                            {attempt.score}/{attempt.total_questions}
-                                        </span>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
