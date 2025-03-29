@@ -28,5 +28,10 @@ export default defineConfig({
   },
   resolve: {
     extensions: ['.js', '.jsx', '.json']
+  },
+  css: {
+    modules: {
+      localsConvention: 'camelCase'
+    }
   }
 });
