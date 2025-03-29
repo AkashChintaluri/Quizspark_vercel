@@ -30,8 +30,6 @@ export default defineConfig({
     extensions: ['.js', '.jsx', '.json']
   },
   css: {
-    modules: {
-      localsConvention: 'camelCase'
-    }
+    postcss: './postcss.config.js'
   }
 });
