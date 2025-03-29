@@ -1,12 +1,15 @@
 // src/components/Layout.jsx
 import React from 'react';
 import Header from './Header';
+import './Layout.css';
 
 function Layout({ children }) {
     return (
-        <div>
+        <div className="layout">
             <Header />
-            {children}
+            <main className="main-content">
+                {children}
+            </main>
         </div>
     );
 }

@@ -1,7 +1,7 @@
 // src/App.jsx
 import './App.css';
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { ChakraProvider } from '@chakra-ui/react';
 import Home from './pages/Home';
 import StudentLogin from './pages/StudentLogin';
@@ -11,12 +11,20 @@ import StudentDashboard from './pages/StudentDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import Header from './components/Header';
 
-const Layout = ({ children }) => (
-    <>
-        <Header />
-        {children}
-    </>
-);
+const Layout = ({ children }) => {
+    const location = useLocation();
+    const hideHeaderPaths = ['/student-dashboard', '/teacher-dashboard'];
+    const shouldShowHeader = !hideHeaderPaths.some(path => location.pathname.startsWith(path));
+
+    return (
+        <div className="layout-container">
+            {shouldShowHeader && <Header />}
+            <main className="main-content">
+                {children}
+            </main>
+        </div>
+    );
+};
 
 function App() {
     return (
@@ -30,13 +38,13 @@ function App() {
                         <Route path="/signup" element={<Layout><SignupForm /></Layout>} />
 
                         {/* Student Dashboard Routes */}
-                        <Route path="/student-dashboard" element={<StudentDashboard />}>
-                            <Route index element={null} /> {/* Default route for /student-dashboard */}
-                            <Route path="take-quiz/:quizCode" element={null} /> {/* Nested route for quiz */}
-                            <Route path="quiz/:quizCode" element={null} /> {/* Nested route for results */}
+                        <Route path="/student-dashboard" element={<Layout><StudentDashboard /></Layout>}>
+                            <Route index element={null} />
+                            <Route path="take-quiz/:quizCode" element={null} />
+                            <Route path="quiz/:quizCode" element={null} />
                         </Route>
 
-                        <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
+                        <Route path="/teacher-dashboard" element={<Layout><TeacherDashboard /></Layout>} />
                     </Routes>
                 </div>
             </Router>

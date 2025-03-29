@@ -6,6 +6,7 @@ import {
 } from 'react-router-dom';
 import axios from 'axios';
 import './StudentDashboard.css';
+import './TakeQuiz.css';
 import TeacherList from './TeacherList';
 
 const API_BASE_URL = 'http://localhost:3000/api';
@@ -359,16 +360,12 @@ function TakeQuizContent({ currentUser }) {
                 <div className="question-list">
                     {quizData.questions.questions.map((question, index) => (
                         <div key={index} className="question-card">
-                            <h3 className="question-number">Question {index + 1}</h3>
+                            <span className="question-number">Question {index + 1}</span>
                             <p className="question-text">{question.question_text}</p>
                             <div className="options-container">
                                 {question.options.map((option, optionIndex) => (
                                     <div key={optionIndex} className="option-item">
-                                        <label
-                                            className={
-                                                selectedAnswers[index] === optionIndex ? 'selected' : ''
-                                            }
-                                        >
+                                        <label className={selectedAnswers[index] === optionIndex ? 'selected' : ''}>
                                             <input
                                                 type="radio"
                                                 name={`question_${index}`}
@@ -398,30 +395,30 @@ function TakeQuizContent({ currentUser }) {
     return (
         <div className="content">
             <div className="take-quiz-content">
-                {showQuizCodeInput && !urlQuizCode && (
+                {loading ? (
+                    <div className="loading">Loading...</div>
+                ) : error ? (
+                    <div className="error-message">{error}</div>
+                ) : showQuizCodeInput ? (
                     <>
-                        <div className="header-section">
-                            <h2>Take Quiz</h2>
-                        </div>
-                        <div className="quiz-code-section">
-                            <form onSubmit={handleQuizCodeSubmit}>
-                                <input
-                                    type="text"
-                                    placeholder="Enter Quiz Code"
-                                    value={quizCode}
-                                    onChange={(e) => setQuizCode(e.target.value)}
-                                    className="quiz-code-input"
-                                />
-                                <button type="submit" className="start-quiz-btn" disabled={loading}>
-                                    {loading ? 'Loading...' : 'Start Quiz'}
-                                </button>
-                            </form>
-                        </div>
+                        <h2>Enter Quiz Code</h2>
+                        <form onSubmit={handleQuizCodeSubmit}>
+                            <input
+                                type="text"
+                                className="quiz-code-input"
+                                value={quizCode}
+                                onChange={(e) => setQuizCode(e.target.value)}
+                                placeholder="Enter quiz code"
+                                required
+                            />
+                            <button type="submit" className="start-quiz-btn">
+                                Start Quiz
+                            </button>
+                        </form>
                     </>
+                ) : (
+                    renderQuiz()
                 )}
-                {loading && <p>Loading quiz...</p>}
-                {error && <p className="error-message">{error}</p>}
-                {!loading && quizData && renderQuiz()}
             </div>
         </div>
     );
@@ -492,12 +489,16 @@ function ResultsContent({ currentUser }) {
         setRetestLoading(true);
         setRetestMessage('');
         try {
-            const quizQuery = await axios.get(`${API_BASE_URL}/quizzes/${quizCode}`);
-            const quizId = quizQuery.data.quiz_id;
-
+            console.log('Quiz Result:', quizResult);
+            console.log('Request Data:', {
+                student_id: currentUser.id,
+                quiz_id: quizResult.quiz_id,
+                attempt_id: attemptId
+            });
+            
             const response = await axios.post(`${API_BASE_URL}/retest-requests`, {
                 student_id: currentUser.id,
-                quiz_id: quizId,
+                quiz_id: quizResult.quiz_id,
                 attempt_id: attemptId
             });
 
@@ -505,6 +506,7 @@ function ResultsContent({ currentUser }) {
                 setRetestMessage('Retest request submitted successfully');
             }
         } catch (error) {
+            console.error('Error requesting retest:', error);
             setRetestMessage(error.response?.data?.error || 'Failed to request retest');
         } finally {
             setRetestLoading(false);
@@ -520,8 +522,8 @@ function ResultsContent({ currentUser }) {
                 <p className="final-score">Final Score: {quizResult.score} / {quizResult.totalQuestions}</p>
                 {quizResult.questions.map((question, questionIndex) => (
                     <div key={questionIndex} className="question-card">
-                        <h4>Question {questionIndex + 1}</h4>
-                        <p>{question.question_text}</p>
+                        <span className="question-number">Question {questionIndex + 1}</span>
+                        <p className="question-text">{question.question_text}</p>
                         <div className="options-container">
                             {question.options.map((option, optionIndex) => {
                                 const isSelected = quizResult.userAnswers[questionIndex] == optionIndex;
@@ -532,16 +534,15 @@ function ResultsContent({ currentUser }) {
                                 } else if (isSelected && !isCorrectAnswer) {
                                     className += ' incorrect';
                                 }
-
                                 return (
                                     <div key={optionIndex} className={className}>
                                         <label>
                                             <input
                                                 type="radio"
                                                 checked={isSelected}
-                                                disabled
+                                                readOnly
                                             />
-                                            <span>{option.text}</span>
+                                            <span className="option-text">{option.text}</span>
                                         </label>
                                     </div>
                                 );
@@ -549,23 +550,28 @@ function ResultsContent({ currentUser }) {
                         </div>
                     </div>
                 ))}
-                <button
-                    className="request-retest-btn"
-                    onClick={() => handleRequestRetest(quizCode, quizResult.attemptId)}
-                    disabled={retestLoading}
-                >
-                    {retestLoading ? 'Requesting...' : 'Request Retest'}
-                </button>
-                {retestMessage && <p className="retest-message">{retestMessage}</p>}
+                {!retestLoading && !retestMessage && (
+                    <button
+                        onClick={() => handleRequestRetest(quizResult.quizCode, quizResult.attemptId)}
+                        className="request-retest-btn"
+                    >
+                        Request Retest
+                    </button>
+                )}
+                {retestMessage && (
+                    <div className={`retest-message ${retestMessage.includes('success') ? 'success' : 'error'}`}>
+                        {retestMessage}
+                    </div>
+                )}
             </div>
         );
     };
 
     return (
         <div className="content">
-            <h2>Quiz Results</h2>
-            {!urlQuizCode && (
-                <div className="results-form-container">
+            <div className="take-quiz-content">
+                <h2>Quiz Results</h2>
+                {!urlQuizCode && (
                     <form onSubmit={handleQuizCodeSubmit}>
                         <input
                             type="text"
@@ -578,10 +584,10 @@ function ResultsContent({ currentUser }) {
                             {loading ? 'Loading...' : 'View Results'}
                         </button>
                     </form>
-                </div>
-            )}
-            {error && <p className="error-message">{error}</p>}
-            {loading ? <p>Loading results...</p> : renderQuizResult()}
+                )}
+                {error && <div className="error-message">{error}</div>}
+                {loading ? <div className="loading">Loading results...</div> : renderQuizResult()}
+            </div>
         </div>
     );
 }
@@ -589,13 +595,18 @@ function ResultsContent({ currentUser }) {
 function SettingsContent({ currentUser }) {
     const navigate = useNavigate();
     const [showPasswordFields, setShowPasswordFields] = useState(false);
+    const [showProfileFields, setShowProfileFields] = useState(false);
     const [formData, setFormData] = useState({
-        username: '',
         currentPassword: '',
         newPassword: '',
     });
+    const [profileData, setProfileData] = useState({
+        email: currentUser?.email || '',
+        name: currentUser?.username || ''
+    });
     const [message, setMessage] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [activeCard, setActiveCard] = useState(null);
 
     const handleLogout = () => {
         localStorage.removeItem('user');
@@ -603,12 +614,9 @@ function SettingsContent({ currentUser }) {
     };
 
     const handlePasswordChange = async () => {
-        setLoading(true);
+        setIsLoading(true);
         setMessage('');
         try {
-            if (!currentUser?.username) {
-                throw new Error('User not authenticated');
-            }
             const response = await axios.post('http://localhost:3000/change-password', {
                 ...formData,
                 username: currentUser.username,
@@ -618,18 +626,43 @@ function SettingsContent({ currentUser }) {
             if (response.status === 200) {
                 setMessage('Password changed successfully');
                 setFormData({
-                    username: '',
                     currentPassword: '',
                     newPassword: '',
                 });
                 setShowPasswordFields(false);
+                setActiveCard(null);
             } else {
                 setMessage(response.data.message || 'Failed to change password');
             }
         } catch (error) {
             setMessage('An error occurred while changing the password');
         } finally {
-            setLoading(false);
+            setIsLoading(false);
+        }
+    };
+
+    const handleProfileUpdate = async () => {
+        setIsLoading(true);
+        setMessage('');
+        try {
+            const response = await axios.put(`http://localhost:3000/api/students/${currentUser.id}`, {
+                ...profileData
+            });
+
+            if (response.status === 200) {
+                setMessage('Profile updated successfully');
+                const updatedUser = { ...currentUser, ...profileData };
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+                setShowProfileFields(false);
+                setActiveCard(null);
+            } else {
+                setMessage(response.data.message || 'Failed to update profile');
+            }
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            setMessage('An error occurred while updating the profile');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -638,43 +671,165 @@ function SettingsContent({ currentUser }) {
         setFormData((prevState) => ({ ...prevState, [name]: value }));
     };
 
+    const handleProfileInputChange = (e) => {
+        const { name, value } = e.target;
+        setProfileData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const settingsCards = [
+        {
+            id: 'profile',
+            title: 'Profile Settings',
+            icon: '👤',
+            description: 'View and update your profile information',
+            color: '#4f46e5'
+        },
+        {
+            id: 'password',
+            title: 'Security',
+            icon: '🔒',
+            description: 'Change your password and security settings',
+            color: '#7c3aed'
+        },
+        {
+            id: 'logout',
+            title: 'Logout',
+            icon: '🚪',
+            description: 'Sign out of your account',
+            color: '#dc2626'
+        }
+    ];
+
     return (
         <div className="content">
-            <h2>Settings</h2>
-            <div className="settings-options">
-                <button className="settings-button logout" onClick={handleLogout}>
-                    Logout
-                </button>
-                <button
-                    className="settings-button change-password"
-                    onClick={() => setShowPasswordFields(!showPasswordFields)}
-                >
-                    Change Password
-                </button>
-                {showPasswordFields && (
-                    <div className="password-change-fields">
-                        <input
-                            type="password"
-                            name="currentPassword"
-                            placeholder="Current Password"
-                            value={formData.currentPassword}
-                            onChange={handleInputChange}
-                            disabled={loading}
-                        />
-                        <input
-                            type="password"
-                            name="newPassword"
-                            placeholder="New Password"
-                            value={formData.newPassword}
-                            onChange={handleInputChange}
-                            disabled={loading}
-                        />
-                        <button onClick={handlePasswordChange} disabled={loading}>
-                            {loading ? 'Changing...' : 'Submit'}
-                        </button>
+            <div className="settings-container">
+                <div className="settings-header">
+                    <h2>Settings & Preferences</h2>
+                </div>
+                
+                <div className="settings-grid">
+                    {settingsCards.map((card) => (
+                        <div 
+                            key={card.id}
+                            className={`settings-card ${activeCard === card.id ? 'active' : ''}`}
+                            style={{'--card-color': card.color}}
+                            onClick={() => {
+                                if (card.id === 'logout') {
+                                    handleLogout();
+                                } else {
+                                    setActiveCard(activeCard === card.id ? null : card.id);
+                                    if (card.id === 'password') {
+                                        setShowPasswordFields(!showPasswordFields);
+                                        setShowProfileFields(false);
+                                    } else if (card.id === 'profile') {
+                                        setShowProfileFields(!showProfileFields);
+                                        setShowPasswordFields(false);
+                                    }
+                                }
+                            }}
+                        >
+                            <div className="card-icon">{card.icon}</div>
+                            <div className="card-content">
+                                <h3>{card.title}</h3>
+                                <p>{card.description}</p>
+                            </div>
+                            {card.id !== 'logout' && (
+                                <div className="card-arrow">→</div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                {showProfileFields && activeCard === 'profile' && (
+                    <div className="settings-panel">
+                        <div className="panel-header">
+                            <h3>Profile Settings</h3>
+                            <button className="close-panel" onClick={() => {
+                                setShowProfileFields(false);
+                                setActiveCard(null);
+                            }}>×</button>
+                        </div>
+                        <div className="panel-content">
+                            <div className="input-group">
+                                <label htmlFor="name">Name</label>
+                                <input
+                                    type="text"
+                                    id="name"
+                                    name="name"
+                                    value={profileData.name}
+                                    onChange={handleProfileInputChange}
+                                    placeholder="Enter your name"
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label htmlFor="email">Email</label>
+                                <input
+                                    type="email"
+                                    id="email"
+                                    name="email"
+                                    value={profileData.email}
+                                    onChange={handleProfileInputChange}
+                                    placeholder="Enter your email"
+                                />
+                            </div>
+                            <button
+                                className="update-profile-btn"
+                                onClick={handleProfileUpdate}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? 'Updating...' : 'Update Profile'}
+                            </button>
+                            {message && <div className={message.includes('success') ? 'success-message' : 'error-message'}>{message}</div>}
+                        </div>
                     </div>
                 )}
-                {message && <p className="message">{message}</p>}
+
+                {showPasswordFields && (
+                    <div className="settings-panel">
+                        <div className="panel-header">
+                            <h3>Change Password</h3>
+                            <button className="close-panel" onClick={() => {
+                                setShowPasswordFields(false);
+                                setActiveCard(null);
+                            }}>×</button>
+                        </div>
+                        <div className="panel-content">
+                            <div className="input-group">
+                                <label>Current Password</label>
+                                <input
+                                    type="password"
+                                    name="currentPassword"
+                                    placeholder="Enter your current password"
+                                    value={formData.currentPassword}
+                                    onChange={handleInputChange}
+                                    disabled={isLoading}
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>New Password</label>
+                                <input
+                                    type="password"
+                                    name="newPassword"
+                                    placeholder="Enter your new password"
+                                    value={formData.newPassword}
+                                    onChange={handleInputChange}
+                                    disabled={isLoading}
+                                />
+                            </div>
+                            <button
+                                className="update-password-btn"
+                                onClick={handlePasswordChange}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? 'Updating...' : 'Update Password'}
+                            </button>
+                            {message && <div className="settings-message">{message}</div>}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

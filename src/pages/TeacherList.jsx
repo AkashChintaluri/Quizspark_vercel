@@ -2,70 +2,72 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './TeacherList.css';
 
+const API_BASE_URL = 'http://localhost:3000';
+
 function TeacherList({ studentId }) {
     const [teachers, setTeachers] = useState([]);
-    const [subscriptions, setSubscriptions] = useState(new Set());
-    const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [showDropdown, setShowDropdown] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [subscriptions, setSubscriptions] = useState(new Set());
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const [teachersRes, subsRes] = await Promise.all([
-                    axios.get('/api/teachers'),
-                    axios.get(`/api/subscriptions/${studentId}`)
-                ]);
-
-                if (Array.isArray(teachersRes.data)) {
-                    setTeachers(teachersRes.data);
-                } else {
-                    console.warn('Teachers response is not an array:', teachersRes.data);
-                    setTeachers([]);
-                    setError('Invalid teachers data received.');
-                }
-
-                if (Array.isArray(subsRes.data)) {
-                    setSubscriptions(new Set(subsRes.data.map(sub => sub.id)));
-                } else {
-                    console.warn('Subscriptions response is not an array:', subsRes.data);
-                    setSubscriptions(new Set());
-                    setError(subsRes.data?.error || 'Invalid subscriptions data received.');
-                }
-            } catch (error) {
-                console.error('Error fetching data:', error);
-                setError(error.response?.data?.error || 'Failed to fetch teacher data.');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
+        fetchTeachers();
     }, [studentId]);
 
-    const handleSubscription = async (teacherId, action) => {
+    const fetchTeachers = async () => {
         try {
-            await axios.post(`/api/${action}`, {
-                student_id: studentId,
-                teacher_id: teacherId
-            });
-            setSubscriptions(prev => {
-                const newSubs = new Set(prev);
-                action === 'subscribe' ? newSubs.add(teacherId) : newSubs.delete(teacherId);
-                return newSubs;
-            });
-        } catch (error) {
-            console.error('Subscription action failed:', error);
-            setError(error.response?.data?.error || `Failed to ${action}.`);
+            const [teachersRes, subsRes] = await Promise.all([
+                axios.get(`${API_BASE_URL}/api/teachers`),
+                axios.get(`${API_BASE_URL}/api/subscriptions/${studentId}`)
+            ]);
+            
+            if (Array.isArray(teachersRes.data)) {
+                setTeachers(teachersRes.data);
+            } else {
+                console.warn('Teachers response is not an array:', teachersRes.data);
+                setTeachers([]);
+                setError('Invalid teachers data received.');
+            }
+
+            if (Array.isArray(subsRes.data)) {
+                setSubscriptions(new Set(subsRes.data.map(sub => sub.id)));
+            } else {
+                console.warn('Subscriptions response is not an array:', subsRes.data);
+                setSubscriptions(new Set());
+                setError(subsRes.data?.error || 'Invalid subscriptions data received.');
+            }
+        } catch (err) {
+            console.error('Error fetching data:', err);
+            setError(err.response?.data?.error || 'Failed to fetch teacher data.');
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleSearch = (e) => {
-        setSearchTerm(e.target.value);
+    const handleSubscribe = async (teacherId) => {
+        try {
+            await axios.post(`${API_BASE_URL}/api/subscribe`, {
+                student_id: studentId,
+                teacher_id: teacherId
+            });
+            fetchTeachers();
+        } catch (err) {
+            setError('Failed to subscribe to teacher');
+        }
     };
 
-    const toggleDropdown = () => {
-        setIsDropdownOpen(!isDropdownOpen);
+    const handleUnsubscribe = async (teacherId) => {
+        try {
+            await axios.post(`${API_BASE_URL}/api/unsubscribe`, {
+                student_id: studentId,
+                teacher_id: teacherId
+            });
+            fetchTeachers();
+        } catch (err) {
+            setError('Failed to unsubscribe from teacher');
+        }
     };
 
     const subscribedTeachers = teachers.filter(teacher => subscriptions.has(teacher.id));
@@ -74,17 +76,22 @@ function TeacherList({ studentId }) {
         teacher.username.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    if (loading) return <div className="loading">Loading teachers...</div>;
-    if (error) return <div className="error-message">{error}</div>;
+    if (loading) {
+        return <div className="teacher-list"><div className="loading">Loading teachers...</div></div>;
+    }
+
+    if (error) {
+        return <div className="teacher-list"><div className="error-message">{error}</div></div>;
+    }
 
     return (
         <div className="teacher-list">
-            <h3>Your Subscribed Teachers</h3>
+            <h3>Your Teachers</h3>
             {subscribedTeachers.length === 0 ? (
-                <p className="no-teachers">You haven’t subscribed to any teachers yet.</p>
+                <div className="no-teachers">You haven't subscribed to any teachers yet.</div>
             ) : (
                 <div className="teacher-grid">
-                    {subscribedTeachers.map(teacher => (
+                    {subscribedTeachers.map((teacher) => (
                         <div key={teacher.id} className="teacher-card">
                             <div className="teacher-info">
                                 <h4>{teacher.username}</h4>
@@ -93,8 +100,8 @@ function TeacherList({ studentId }) {
                             <div className="teacher-actions">
                                 <span className="status subscribed">Subscribed</span>
                                 <button
-                                    onClick={() => handleSubscription(teacher.id, 'unsubscribe')}
                                     className="subscribed-btn"
+                                    onClick={() => handleUnsubscribe(teacher.id)}
                                 >
                                     Unsubscribe
                                 </button>
@@ -107,29 +114,30 @@ function TeacherList({ studentId }) {
             <div className="unsubscribed-section">
                 <button
                     className="dropdown-toggle"
-                    onClick={toggleDropdown}
+                    onClick={() => setShowDropdown(!showDropdown)}
                 >
-                    {isDropdownOpen ? 'Hide Available Teachers' : 'Show Available Teachers'}
+                    {showDropdown ? 'Hide Available Teachers' : 'Show Available Teachers'}
                 </button>
-                {isDropdownOpen && (
+
+                {showDropdown && (
                     <div className="dropdown-menu">
                         <input
                             type="text"
+                            className="search-input"
                             placeholder="Search teachers..."
                             value={searchTerm}
-                            onChange={handleSearch}
-                            className="search-input"
+                            onChange={(e) => setSearchTerm(e.target.value)}
                         />
                         {filteredUnsubscribedTeachers.length === 0 ? (
-                            <p className="no-teachers">No matching teachers found.</p>
+                            <div className="no-teachers">No teachers found</div>
                         ) : (
                             <ul className="teacher-dropdown-list">
-                                {filteredUnsubscribedTeachers.map(teacher => (
+                                {filteredUnsubscribedTeachers.map((teacher) => (
                                     <li key={teacher.id} className="dropdown-item">
-                                        <span>{teacher.username} ({teacher.email})</span>
+                                        <span>{teacher.username}</span>
                                         <button
-                                            onClick={() => handleSubscription(teacher.id, 'subscribe')}
                                             className="subscribe-btn"
+                                            onClick={() => handleSubscribe(teacher.id)}
                                         >
                                             Subscribe
                                         </button>

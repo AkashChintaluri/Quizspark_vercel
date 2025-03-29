@@ -300,6 +300,7 @@ function startServer() {
             }
 
             const quizResults = {
+                quiz_id: quizData.quiz_id,
                 quizName: quizData.quiz_name,
                 attemptId: quizData.attempt_id,
                 score: quizData.score || 0,
@@ -549,7 +550,14 @@ function startServer() {
     // Retest Requests Endpoints
     app.post('/api/retest-requests', async (req, res) => {
         try {
+            console.log('Received retest request:', req.body);
             const { student_id, quiz_id, attempt_id } = req.body;
+            
+            if (!quiz_id) {
+                console.error('Missing quiz_id in request');
+                return res.status(400).json({ error: 'quiz_id is required' });
+            }
+
             const result = await pool.query(
                 `INSERT INTO retest_requests 
                  (student_id, quiz_id, attempt_id) 
@@ -644,6 +652,54 @@ function startServer() {
         } catch (error) {
             console.error('Error updating retest request:', error);
             res.status(500).json({ error: 'Failed to update retest request' });
+        }
+    });
+
+    app.put('/api/teachers/:id', async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { email, name } = req.body;
+
+            const query = `
+                UPDATE teacher_login 
+                SET email = $1, username = $2
+                WHERE id = $3
+                RETURNING id, username, email
+            `;
+            const result = await pool.query(query, [email, name, id]);
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ message: 'Teacher not found' });
+            }
+
+            res.json(result.rows[0]);
+        } catch (error) {
+            console.error('Error updating teacher profile:', error);
+            res.status(500).json({ message: 'Failed to update profile' });
+        }
+    });
+
+    app.put('/api/students/:id', async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { email, name } = req.body;
+
+            const query = `
+                UPDATE student_login 
+                SET email = $1, username = $2
+                WHERE id = $3
+                RETURNING id, username, email
+            `;
+            const result = await pool.query(query, [email, name, id]);
+
+            if (result.rows.length === 0) {
+                return res.status(404).json({ message: 'Student not found' });
+            }
+
+            res.json(result.rows[0]);
+        } catch (error) {
+            console.error('Error updating student profile:', error);
+            res.status(500).json({ message: 'Failed to update profile' });
         }
     });
 

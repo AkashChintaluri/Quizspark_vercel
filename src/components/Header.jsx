@@ -1,18 +1,27 @@
 // src/components/Header.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './Header.css';
 
 function Header() {
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+
     return (
-        <header className="navbar">
-            <div className="navbar-content">
-                <Link to="/" className="title">QuizSpark</Link>
-                <div className="buttons">
-                    <Link to="/signup" className="button">Signup</Link>
-                    <Link to="/student-login" className="button">Student Login</Link>
-                    <Link to="/teacher-login" className="button">Teacher Login</Link>
-                </div>
+        <header className="header">
+            <div className="header-content">
+                <Link to="/" className="logo">
+                    <span className="logo-text">QuizSpark</span>
+                </Link>
+                <nav className={`nav-menu ${isMenuOpen ? 'active' : ''}`}>
+                    <Link to="/signup" className="nav-link">Sign Up</Link>
+                    <Link to="/student-login" className="nav-link">Student Login</Link>
+                    <Link to="/teacher-login" className="nav-link">Teacher Login</Link>
+                </nav>
+                <button className="menu-toggle" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
             </div>
         </header>
     );

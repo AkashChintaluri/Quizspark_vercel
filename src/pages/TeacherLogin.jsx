@@ -4,12 +4,11 @@ import axios from 'axios';
 import './Login.css';
 
 function TeacherLogin() {
-    const [formData, setFormData] = useState({ username: '', password: '' });
-    const [isPressed, setIsPressed] = useState(false);
-    const [showPopup, setShowPopup] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [errorMessage, setErrorMessage] = useState('');
     const navigate = useNavigate();
+    const [formData, setFormData] = useState({ username: '', password: '' });
+    const [isLoading, setIsLoading] = useState(false);
+    const [showPopup, setShowPopup] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
 
     useEffect(() => {
         if (showPopup) {
@@ -20,6 +19,11 @@ function TeacherLogin() {
             return () => clearTimeout(timer);
         }
     }, [showPopup, navigate]);
+
+    const handleInputChange = (e) => {
+        const { id, value } = e.target;
+        setFormData(prev => ({ ...prev, [id]: value }));
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -48,30 +52,30 @@ function TeacherLogin() {
     };
 
     return (
-        <div className="login-container">
-            <div className="login-form-wrapper">
+        <div className="login">
+            <div className="login-content">
                 <h2>Teacher Login</h2>
                 <form className="login-form" onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <label htmlFor="username">Username:</label>
                         <input
                             type="text"
                             id="username"
                             value={formData.username}
-                            onChange={(e) => setFormData({...formData, username: e.target.value})}
+                            onChange={handleInputChange}
                             required
+                            placeholder="Username"
                             autoComplete="username"
                             disabled={isLoading}
                         />
                     </div>
                     <div className="form-group">
-                        <label htmlFor="password">Password:</label>
                         <input
                             type="password"
                             id="password"
                             value={formData.password}
-                            onChange={(e) => setFormData({...formData, password: e.target.value})}
+                            onChange={handleInputChange}
                             required
+                            placeholder="Password"
                             autoComplete="current-password"
                             disabled={isLoading}
                         />
@@ -82,14 +86,6 @@ function TeacherLogin() {
                     <button
                         type="submit"
                         className="login-button"
-                        style={{
-                            transform: isPressed ? 'scale(0.95)' : 'scale(1)',
-                            transition: 'transform 0.1s',
-                            opacity: isLoading ? 0.7 : 1
-                        }}
-                        onMouseDown={() => setIsPressed(true)}
-                        onMouseUp={() => setIsPressed(false)}
-                        onMouseLeave={() => setIsPressed(false)}
                         disabled={isLoading}
                     >
                         {isLoading ? 'Logging In...' : 'Login'}

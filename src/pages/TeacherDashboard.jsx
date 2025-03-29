@@ -84,6 +84,14 @@ function Sidebar({ activeTab, setActiveTab, currentUser }) {
 }
 
 function Content({ activeTab, currentUser, setActiveTab, location }) {
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (activeTab !== 'results') {
+            navigate('.', { state: { quizCode: null } });
+        }
+    }, [activeTab, navigate]);
+
     switch (activeTab) {
         case 'home':
             return <HomeContent currentUser={currentUser} setActiveTab={setActiveTab} />;
@@ -295,19 +303,33 @@ function HomeContent({ currentUser, setActiveTab }) {
                         <div className="latest-section">
                             <h2 className="section-title">Latest Quiz</h2>
                             <div
-                                className="latest-card clickable"
+                                className="latest-card"
                                 onClick={() => handleQuizClick(quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].quiz_code)}
                             >
-                                <h3 className="latest-title">{quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].quiz_name}</h3>
-                                <div className="quiz-details">
-                                    <p><span className="detail-label">Code:</span> {quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].quiz_code}</p>
-                                    <p><span className="detail-label">Questions:</span> {quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].questions.questions.length}</p>
-                                    <p><span className="detail-label">Due:</span> {new Date(quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].due_date).toLocaleDateString()}</p>
-                                    <p><span className="detail-label">Created:</span> {new Date(quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].created_at).toLocaleDateString()}</p>
+                                <div className="quiz-card-content">
+                                    <div className="quiz-status">
+                                        <span className="quiz-code">{quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].quiz_code}</span>
+                                        <span className="quiz-questions">{quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].questions.questions.length} Questions</span>
+                                    </div>
+                                    <h3 className="quiz-name">{quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].quiz_name}</h3>
+                                    <div className="quiz-meta">
+                                        <div className="meta-item">
+                                            <span className="meta-label">Due Date</span>
+                                            <span className="meta-value">{new Date(quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].due_date).toLocaleDateString()}</span>
+                                        </div>
+                                        <div className="meta-item">
+                                            <span className="meta-label">Created</span>
+                                            <span className="meta-value">{new Date(quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].created_at).toLocaleDateString()}</span>
+                                        </div>
+                                        <div className="meta-item">
+                                            <span className="meta-label">Total Questions</span>
+                                            <span className="meta-value">{quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0].questions.questions.length}</span>
+                                        </div>
+                                    </div>
+                                    <button className="view-details-btn" onClick={(e) => { e.stopPropagation(); handleViewDetails(quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]); }}>
+                                        View Details
+                                    </button>
                                 </div>
-                                <button className="view-details-btn" onClick={(e) => { e.stopPropagation(); handleViewDetails(quizzes.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]); }}>
-                                    View Details
-                                </button>
                             </div>
                         </div>
                     )}
@@ -327,20 +349,31 @@ function HomeContent({ currentUser, setActiveTab }) {
 
                     <div className="quizzes-grid">
                         {filteredQuizzes.map((quiz) => (
-                            <div
-                                key={quiz.quiz_id}
-                                className="quiz-card clickable"
-                                onClick={() => handleQuizClick(quiz.quiz_code)}
-                            >
-                                <h3 className="quiz-title">{quiz.quiz_name}</h3>
-                                <div className="quiz-details">
-                                    <p><span className="detail-label">Code:</span> {quiz.quiz_code}</p>
-                                    <p><span className="detail-label">Questions:</span> {quiz.questions.questions.length}</p>
-                                    <p><span className="detail-label">Due:</span> {new Date(quiz.due_date).toLocaleDateString()}</p>
+                            <div key={quiz.quiz_id} className="quiz-card" onClick={() => handleQuizClick(quiz.quiz_code)}>
+                                <div className="quiz-card-content">
+                                    <div className="quiz-status">
+                                        <span className="quiz-code">{quiz.quiz_code}</span>
+                                        <span className="quiz-questions">{quiz.questions.questions.length} Questions</span>
+                                    </div>
+                                    <h3 className="quiz-name">{quiz.quiz_name}</h3>
+                                    <div className="quiz-meta">
+                                        <div className="meta-item">
+                                            <span className="meta-label">Due Date</span>
+                                            <span className="meta-value">{new Date(quiz.due_date).toLocaleDateString()}</span>
+                                        </div>
+                                        <div className="meta-item">
+                                            <span className="meta-label">Created</span>
+                                            <span className="meta-value">{new Date(quiz.created_at).toLocaleDateString()}</span>
+                                        </div>
+                                        <div className="meta-item">
+                                            <span className="meta-label">Total Questions</span>
+                                            <span className="meta-value">{quiz.questions.questions.length}</span>
+                                        </div>
+                                    </div>
+                                    <button className="view-details-btn" onClick={(e) => { e.stopPropagation(); handleViewDetails(quiz); }}>
+                                        View Details
+                                    </button>
                                 </div>
-                                <button className="view-details-btn" onClick={(e) => { e.stopPropagation(); handleViewDetails(quiz); }}>
-                                    View Details
-                                </button>
                             </div>
                         ))}
                     </div>
@@ -348,8 +381,6 @@ function HomeContent({ currentUser, setActiveTab }) {
             )}
 
             {message && <div className="message">{message}</div>}
-
-            <p className="welcome-text">Welcome, {currentUser?.username}! Manage your quizzes with ease.</p>
 
             {selectedQuiz && (
                 <div className="modal-overlay" onClick={handleCancel}>
@@ -627,6 +658,7 @@ function ResultsContent({ currentUser, initialQuizCode }) {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [quizName, setQuizName] = useState('');
+    const [sortConfig, setSortConfig] = useState({ key: 'score', direction: 'desc' });
 
     useEffect(() => {
         if (initialQuizCode) {
@@ -665,15 +697,45 @@ function ResultsContent({ currentUser, initialQuizCode }) {
         fetchResults(quizCode);
     };
 
+    const handleSort = (key) => {
+        const direction = sortConfig.key === key && sortConfig.direction === 'desc' ? 'asc' : 'desc';
+        setSortConfig({ key, direction });
+
+        const sortedAttempts = [...attempts].sort((a, b) => {
+            if (key === 'student_username') {
+                return direction === 'asc' 
+                    ? a[key].localeCompare(b[key]) 
+                    : b[key].localeCompare(a[key]);
+            }
+            return direction === 'asc' ? a[key] - b[key] : b[key] - a[key];
+        });
+        setAttempts(sortedAttempts);
+    };
+
+    const exportToCSV = () => {
+        const headers = ['Student,Score,Total Questions,Date'];
+        const rows = attempts.map(a => 
+            `${a.student_username},${a.score},${a.total_questions},${new Date(a.attempt_date).toLocaleString()}`
+        );
+        const csvContent = [headers, ...rows].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${quizName}_results.csv`;
+        link.click();
+    };
+
     const chartData = {
-        labels: attempts.map((attempt) => attempt.student_username),
+        labels: attempts.map((attempt) => attempt.student_username.slice(0, 3).toUpperCase()),
         datasets: [
             {
-                label: 'Score Percentage',
-                data: attempts.map((attempt) => (attempt.score / attempt.total_questions) * 100),
-                backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                borderColor: 'rgba(54, 162, 235, 1)',
+                label: 'Score',
+                data: attempts.map((attempt) => attempt.score),
+                backgroundColor: 'rgba(79, 70, 229, 0.85)',
+                borderColor: 'rgba(79, 70, 229, 1)',
                 borderWidth: 1,
+                borderRadius: 4,
             },
         ],
     };
@@ -682,97 +744,143 @@ function ResultsContent({ currentUser, initialQuizCode }) {
         responsive: true,
         maintainAspectRatio: false,
         scales: {
-            y: {
-                beginAtZero: true,
-                max: 100,
-                title: { display: true, text: 'Score (%)' },
-            },
-            x: {
-                title: { display: true, text: 'Students' },
-            },
+            y: { beginAtZero: true, grid: { display: false } },
+            x: { grid: { display: false } },
         },
         plugins: {
-            legend: { position: 'top' },
-            title: { display: true, text: `${quizName} - Score Distribution` },
+            legend: { display: false },
+            tooltip: {
+                callbacks: { label: (context) => `${context.raw}/${attempts[0]?.total_questions}` },
+            },
         },
     };
 
+    const totalAttempts = attempts.length;
+    const avgScore = attempts.length > 0 
+        ? (attempts.reduce((sum, a) => sum + a.score, 0) / (attempts.length * attempts[0].total_questions) * 100).toFixed(0) 
+        : 0;
+    const topScore = attempts.length > 0 ? Math.max(...attempts.map(a => a.score)) : 0;
+
     return (
-        <div className="content">
-            <h2>Quiz Results</h2>
-            <div className="results-form-container">
-                <form onSubmit={handleQuizCodeSubmit}>
-                    <input
-                        type="text"
-                        placeholder="Enter Quiz Code to View Results"
-                        value={quizCode}
-                        onChange={(e) => setQuizCode(e.target.value)}
-                        className="quiz-code-input"
-                        disabled={loading}
-                    />
-                    <button type="submit" className="view-results-btn" disabled={loading}>
-                        {loading ? 'Loading...' : 'View Results'}
-                    </button>
-                </form>
+        <div className="content results-content-alt">
+            <div className="results-container-alt">
+                <div className="results-header-card-alt">
+                    <h2 className="results-title-alt">{quizName || 'Quiz Results'}</h2>
+                    <form onSubmit={handleQuizCodeSubmit} className="results-form-alt">
+                        <div className="quiz-code-wrapper-alt">
+                            <input
+                                type="text"
+                                placeholder="Enter Quiz Code"
+                                value={quizCode}
+                                onChange={(e) => setQuizCode(e.target.value)}
+                                className="quiz-code-input-alt"
+                                disabled={loading}
+                            />
+                            {quizCode && <span className="quiz-code-display-alt">{quizCode}</span>}
+                        </div>
+                        <button type="submit" className="fetch-btn-alt" disabled={loading}>
+                            <i>🔍</i> {loading ? 'Fetching...' : 'Fetch'}
+                        </button>
+                    </form>
+                </div>
+
+                {error && (
+                    <div className="alert-card">
+                        <span className="alert-icon error">⚠️</span>
+                        <div className="alert-content">
+                            <h3 className="alert-title">Error</h3>
+                            <p className="alert-message">{error}</p>
+                        </div>
+                    </div>
+                )}
+
+                {loading && (
+                    <div className="alert-card">
+                        <span className="alert-icon loading">⟳</span>
+                        <div className="alert-content">
+                            <h3 className="alert-title">Loading</h3>
+                            <p className="alert-message">Fetching quiz results...</p>
+                        </div>
+                    </div>
+                )}
+
+                {!loading && !error && attempts.length === 0 && quizCode && (
+                    <div className="empty-state">
+                        <span className="empty-icon">📊</span>
+                        <h3 className="empty-title">No Results Found</h3>
+                        <p className="empty-message">No attempts found for quiz code "{quizCode}". Verify the code or try another.</p>
+                    </div>
+                )}
+
+                {!loading && !error && attempts.length > 0 && (
+                    <div className="results-body-alt">
+                        <div className="stats-card-alt">
+                            <h3 className="stats-title-alt">Performance Overview</h3>
+                            <div className="stats-grid-alt">
+                                <div className="stat-item-alt">
+                                    <span className="stat-icon-alt"><i>👥</i></span>
+                                    <div className="stat-details-alt">
+                                        <span className="stat-value-alt">{totalAttempts}</span>
+                                        <span className="stat-label-alt">Attempts</span>
+                                    </div>
+                                </div>
+                                <div className="stat-item-alt">
+                                    <span className="stat-icon-alt"><i>📈</i></span>
+                                    <div className="stat-details-alt">
+                                        <span className="stat-value-alt">{avgScore}%</span>
+                                        <span className="stat-label-alt">Average</span>
+                                    </div>
+                                </div>
+                                <div className="stat-item-alt">
+                                    <span className="stat-icon-alt"><i>🏆</i></span>
+                                    <div className="stat-details-alt">
+                                        <span className="stat-value-alt">{topScore}</span>
+                                        <span className="stat-label-alt">Top Score</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="chart-card-alt">
+                            <div className="chart-header-alt">
+                                <h3 className="chart-title-alt">Score Distribution</h3>
+                            </div>
+                            <div className="chart-body-alt">
+                                <Bar data={chartData} options={chartOptions} />
+                            </div>
+                        </div>
+
+                        <div className="attempts-card-alt">
+                            <div className="attempts-header-alt">
+                                <h3 className="attempts-title-alt">Student Results</h3>
+                                <button className="export-btn-alt" onClick={exportToCSV}>
+                                    <i>📥</i> Export
+                                </button>
+                            </div>
+                            <div className="attempts-list-alt">
+                                {attempts.map((attempt) => (
+                                    <div key={attempt.attempt_id} className="attempt-item-alt">
+                                        <div className="student-info-alt">
+                                            <span className="student-avatar-alt">
+                                                {attempt.student_username.slice(0, 2).toUpperCase()}
+                                            </span>
+                                            <div className="student-details-alt">
+                                                <span className="student-name-alt">{attempt.student_username}</span>
+                                                <span className="attempt-date-alt">
+                                                    {new Date(attempt.attempt_date).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <span className={`score-badge-alt ${attempt.score >= attempts[0].total_questions * 0.9 ? 'excellent' : attempt.score >= attempts[0].total_questions * 0.7 ? 'good' : attempt.score >= attempts[0].total_questions * 0.5 ? 'average' : 'poor'}`}>
+                                            {attempt.score}/{attempt.total_questions}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
-
-            {error && <p className="error-message">{error}</p>}
-
-            {loading && (
-                <div className="loading-overlay">
-                    <div className="spinner"></div>
-                    <p>Loading results...</p>
-                </div>
-            )}
-
-            {attempts.length > 0 && (
-                <div className="results-container">
-                    <h3>{quizName}</h3>
-                    <div className="stats-summary">
-                        <p>Total Attempts: {attempts.length}</p>
-                        <p>
-                            Average Score:{' '}
-                            {(
-                                (attempts.reduce((sum, a) => sum + a.score, 0) /
-                                    (attempts.length * attempts[0].total_questions)) *
-                                100
-                            ).toFixed(1)}
-                            %
-                        </p>
-                        <p>
-                            Highest Score: {Math.max(...attempts.map((a) => a.score))} /{' '}
-                            {attempts[0].total_questions}
-                        </p>
-                    </div>
-                    <div className="chart-container" style={{ height: '400px', margin: '20px 0' }}>
-                        <Bar data={chartData} options={chartOptions} />
-                    </div>
-                    <table className="results-table">
-                        <thead>
-                        <tr>
-                            <th>Student</th>
-                            <th>Score</th>
-                            <th>Date</th>
-                            <th>Attempt ID</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {attempts.map((attempt) => (
-                            <tr key={attempt.attempt_id}>
-                                <td>{attempt.student_username}</td>
-                                <td>{attempt.score} / {attempt.total_questions}</td>
-                                <td>{new Date(attempt.attempt_date).toLocaleString()}</td>
-                                <td>{attempt.attempt_id}</td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-
-            {!loading && !error && attempts.length === 0 && quizCode && (
-                <p className="empty-state">No attempts found for quiz code: {quizCode}</p>
-            )}
         </div>
     );
 }
@@ -782,6 +890,7 @@ function NotificationsContent({ currentUser }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [teacherPassword, setTeacherPassword] = useState('');
+    const [message, setMessage] = useState('');
 
     useEffect(() => {
         const fetchNotifications = async () => {
@@ -817,77 +926,105 @@ function NotificationsContent({ currentUser }) {
 
             if (response.status === 200) {
                 setNotifications(prevNotifications =>
-                    prevNotifications.filter(notif => notif.request_id !== requestId)
+                    prevNotifications.map(notif => 
+                        notif.request_id === requestId ? { ...notif, status } : notif
+                    ).filter(n => n.status === 'pending')
                 );
-                setError('');
+                setMessage(`Retest request ${status} successfully!`);
                 setTeacherPassword('');
+                setError('');
+                setTimeout(() => setMessage(''), 3000);
             } else {
-                console.log(response);
-                setError(response.response?.data?.error || 'Failed to update retest request. Please check your password.');
+                setError(response.response?.data?.error || 'Failed to update request. Check your password.');
             }
         } catch (error) {
             console.error('Error updating retest request:', error);
-            setError(error.response?.data?.error || 'Failed to update retest request. Please check your password.');
+            setError(error.response?.data?.error || 'Failed to update request. Check your password.');
         }
     };
 
+    const pendingCount = notifications.filter(n => n.status === 'pending').length;
+
     return (
         <div className="content">
-            <h2>Notifications</h2>
             {loading && (
-                <div className="loading-overlay">
-                    <div className="spinner"></div>
-                    <p>Loading notifications...</p>
+                <div className="alert-card loading">
+                    <span className="alert-icon loading">⟳</span>
+                    <div className="alert-content">
+                        <h3 className="alert-title">Loading</h3>
+                        <p className="alert-message">Fetching your notifications...</p>
+                    </div>
                 </div>
             )}
+
             {error && (
-                <div className="error-message">
-                    <span className="error-icon">⚠️</span>
-                    {error}
+                <div className="alert-card error">
+                    <span className="alert-icon error">⚠️</span>
+                    <div className="alert-content">
+                        <h3 className="alert-title">Error</h3>
+                        <p className="alert-message">{error}</p>
+                    </div>
                 </div>
             )}
-            {!loading && !error && notifications.length === 0 && (
-                <p className="empty-state">No pending retest requests.</p>
+
+            {message && (
+                <div className="message success">{message}</div>
             )}
+
+            {!loading && !error && notifications.length === 0 && (
+                <div className="empty-state">
+                    <span className="empty-icon">📭</span>
+                    <h3 className="empty-title">No Notifications</h3>
+                    <p className="empty-message">There are no pending retest requests at the moment.</p>
+                </div>
+            )}
+
             {!loading && !error && notifications.length > 0 && (
                 <div className="notifications-list">
-                    {notifications.map((notification) => (
-                        <div
-                            key={notification.request_id}
-                            className="notification-item"
-                            data-status={notification.status}
-                        >
-                            <div className="text-content">
-                                <p>
-                                    <strong>{notification.student_name}</strong> requested a retest for{' '}
-                                    <strong>{notification.quiz_name}</strong> (Code: {notification.quiz_code})
-                                </p>
-                                <p>Requested on: {new Date(notification.request_date).toLocaleString()}</p>
-                                <p>Status: {notification.status}</p>
-                            </div>
-                            {notification.status === 'pending' && (
-                                <div className="action-buttons">
+                    {notifications.filter(n => n.status === 'pending').map((notification) => (
+                        <div key={notification.request_id} className="notification-item">
+                            <div className="notification-content">
+                                <div className="notification-header">
+                                    <h3 className="notification-title">{notification.quiz_name}</h3>
+                                    <span className="notification-time">
+                                        {new Date(notification.request_date).toLocaleDateString()}
+                                    </span>
+                                </div>
+                                <div className="notification-details">
+                                    <div className="student-info">
+                                        <span className="student-avatar">
+                                            {notification.student_name.slice(0, 2).toUpperCase()}
+                                        </span>
+                                        <span className="student-name">{notification.student_name}</span>
+                                    </div>
+                                    <div className="quiz-code-badge">
+                                        Quiz Code: {notification.quiz_code}
+                                    </div>
+                                </div>
+                                <div className="notification-actions">
                                     <input
                                         type="password"
-                                        placeholder="Password"
+                                        placeholder="Enter your password"
                                         value={teacherPassword}
                                         onChange={(e) => setTeacherPassword(e.target.value)}
                                         className="password-input"
                                     />
-                                    <button
-                                        onClick={() => handleRetestAction(notification.request_id, 'approved')}
-                                        className="allow-btn"
-                                    >
-                                        Allow
-                                    </button>
-                                    <button
-                                        onClick={() => handleRetestAction(notification.request_id, 'declined')}
-                                        className="decline-btn"
-                                    >
-                                        Decline
-                                    </button>
+                                    <div className="action-buttons">
+                                        <button
+                                            onClick={() => handleRetestAction(notification.request_id, 'approved')}
+                                            className="approve-btn"
+                                        >
+                                            Approve
+                                        </button>
+                                        <button
+                                            onClick={() => handleRetestAction(notification.request_id, 'declined')}
+                                            className="decline-btn"
+                                        >
+                                            Decline
+                                        </button>
+                                    </div>
                                 </div>
-                            )}
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -899,12 +1036,18 @@ function NotificationsContent({ currentUser }) {
 function SettingsContent({ currentUser }) {
     const navigate = useNavigate();
     const [showPasswordFields, setShowPasswordFields] = useState(false);
+    const [showProfileFields, setShowProfileFields] = useState(false);
     const [formData, setFormData] = useState({
         currentPassword: '',
         newPassword: '',
     });
+    const [profileData, setProfileData] = useState({
+        email: currentUser?.email || '',
+        name: currentUser?.name || ''
+    });
     const [message, setMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [activeCard, setActiveCard] = useState(null);
 
     const handleLogout = () => {
         localStorage.removeItem('user');
@@ -928,12 +1071,38 @@ function SettingsContent({ currentUser }) {
                     newPassword: '',
                 });
                 setShowPasswordFields(false);
+                setActiveCard(null);
             } else {
                 setMessage(response.data.message || 'Failed to change password');
             }
         } catch (error) {
             console.error('Error changing password:', error);
             setMessage('An error occurred while changing the password');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleProfileUpdate = async () => {
+        setIsLoading(true);
+        setMessage('');
+        try {
+            const response = await axios.put(`http://localhost:3000/api/teachers/${currentUser.id}`, {
+                ...profileData
+            });
+
+            if (response.status === 200) {
+                setMessage('Profile updated successfully');
+                const updatedUser = { ...currentUser, ...profileData };
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+                setShowProfileFields(false);
+                setActiveCard(null);
+            } else {
+                setMessage(response.data.message || 'Failed to update profile');
+            }
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            setMessage('An error occurred while updating the profile');
         } finally {
             setIsLoading(false);
         }
@@ -947,49 +1116,165 @@ function SettingsContent({ currentUser }) {
         }));
     };
 
+    const handleProfileInputChange = (e) => {
+        const { name, value } = e.target;
+        setProfileData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const settingsCards = [
+        {
+            id: 'profile',
+            title: 'Profile Settings',
+            icon: '👤',
+            description: 'View and update your profile information',
+            color: '#4f46e5'
+        },
+        {
+            id: 'password',
+            title: 'Security',
+            icon: '🔒',
+            description: 'Change your password and security settings',
+            color: '#7c3aed'
+        },
+        {
+            id: 'logout',
+            title: 'Logout',
+            icon: '🚪',
+            description: 'Sign out of your account',
+            color: '#dc2626'
+        }
+    ];
+
     return (
         <div className="content">
-            <h2>Settings</h2>
-            <div className="settings-options">
-                <button className="settings-button logout" onClick={handleLogout}>
-                    Logout
-                </button>
-                <button
-                    className="settings-button change-password"
-                    onClick={() => setShowPasswordFields(!showPasswordFields)}
-                >
-                    Change Password
-                </button>
-                {showPasswordFields && (
-                    <div className="password-change-fields">
-                        <input
-                            type="password"
-                            name="currentPassword"
-                            placeholder="Current Password"
-                            value={formData.currentPassword}
-                            onChange={handleInputChange}
-                            disabled={isLoading}
-                            className="quiz-name-input"
-                        />
-                        <input
-                            type="password"
-                            name="newPassword"
-                            placeholder="New Password"
-                            value={formData.newPassword}
-                            onChange={handleInputChange}
-                            disabled={isLoading}
-                            className="quiz-name-input"
-                        />
-                        <button
-                            onClick={handlePasswordChange}
-                            disabled={isLoading}
-                            className="save-btn"
+            <div className="settings-container">
+                <div className="settings-header">
+                    <h2>Settings & Preferences</h2>
+                </div>
+                
+                <div className="settings-grid">
+                    {settingsCards.map((card) => (
+                        <div 
+                            key={card.id}
+                            className={`settings-card ${activeCard === card.id ? 'active' : ''}`}
+                            style={{'--card-color': card.color}}
+                            onClick={() => {
+                                if (card.id === 'logout') {
+                                    handleLogout();
+                                } else {
+                                    setActiveCard(activeCard === card.id ? null : card.id);
+                                    if (card.id === 'password') {
+                                        setShowPasswordFields(!showPasswordFields);
+                                        setShowProfileFields(false);
+                                    } else if (card.id === 'profile') {
+                                        setShowProfileFields(!showProfileFields);
+                                        setShowPasswordFields(false);
+                                    }
+                                }
+                            }}
                         >
-                            {isLoading ? 'Changing...' : 'Submit'}
-                        </button>
+                            <div className="card-icon">{card.icon}</div>
+                            <div className="card-content">
+                                <h3>{card.title}</h3>
+                                <p>{card.description}</p>
+                            </div>
+                            {card.id !== 'logout' && (
+                                <div className="card-arrow">→</div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                {showProfileFields && (
+                    <div className="settings-panel">
+                        <div className="panel-header">
+                            <h3>Profile Settings</h3>
+                            <button className="close-panel" onClick={() => {
+                                setShowProfileFields(false);
+                                setActiveCard(null);
+                            }}>×</button>
+                        </div>
+                        <div className="panel-content">
+                            <div className="input-group">
+                                <label>Name</label>
+                                <input
+                                    type="text"
+                                    name="name"
+                                    placeholder="Enter your name"
+                                    value={profileData.name}
+                                    onChange={handleProfileInputChange}
+                                    disabled={isLoading}
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>Email</label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    placeholder="Enter your email"
+                                    value={profileData.email}
+                                    onChange={handleProfileInputChange}
+                                    disabled={isLoading}
+                                />
+                            </div>
+                            <button
+                                className="update-profile-btn"
+                                onClick={handleProfileUpdate}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? 'Updating...' : 'Update Profile'}
+                            </button>
+                            {message && <div className="settings-message">{message}</div>}
+                        </div>
                     </div>
                 )}
-                {message && <p className="message">{message}</p>}
+
+                {showPasswordFields && (
+                    <div className="settings-panel">
+                        <div className="panel-header">
+                            <h3>Change Password</h3>
+                            <button className="close-panel" onClick={() => {
+                                setShowPasswordFields(false);
+                                setActiveCard(null);
+                            }}>×</button>
+                        </div>
+                        <div className="panel-content">
+                            <div className="input-group">
+                                <label>Current Password</label>
+                                <input
+                                    type="password"
+                                    name="currentPassword"
+                                    placeholder="Enter your current password"
+                                    value={formData.currentPassword}
+                                    onChange={handleInputChange}
+                                    disabled={isLoading}
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>New Password</label>
+                                <input
+                                    type="password"
+                                    name="newPassword"
+                                    placeholder="Enter your new password"
+                                    value={formData.newPassword}
+                                    onChange={handleInputChange}
+                                    disabled={isLoading}
+                                />
+                            </div>
+                            <button
+                                className="update-password-btn"
+                                onClick={handlePasswordChange}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? 'Updating...' : 'Update Password'}
+                            </button>
+                            {message && <div className="settings-message">{message}</div>}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
