@@ -24,14 +24,23 @@ const api = axios.create({
     'Accept': 'application/json'
   },
   // Add timeout to prevent hanging requests
-  timeout: 10000
+  timeout: 10000,
+  // Add additional axios config for CORS
+  xsrfCookieName: 'XSRF-TOKEN',
+  xsrfHeaderName: 'X-XSRF-TOKEN'
 });
 
 // Add response interceptor for better error handling
 api.interceptors.response.use(
   response => response,
   error => {
-    console.error('API Error:', error);
+    // Log the full error details
+    console.error('API Error:', {
+      message: error.message,
+      code: error.code,
+      response: error.response,
+      config: error.config
+    });
     return Promise.reject(error);
   }
 );

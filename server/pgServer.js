@@ -16,7 +16,7 @@ app.use((req, res, next) => {
 
 // Configure CORS
 app.use(cors({
-    origin: true, // Allow all origins
+    origin: 'https://quizspark-smoky.vercel.app',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
     exposedHeaders: ['Content-Range', 'X-Content-Range'],
@@ -28,6 +28,11 @@ app.use(cors({
 
 // Handle preflight requests explicitly
 app.options('*', (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', 'https://quizspark-smoky.vercel.app');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Max-Age', '86400');
     res.status(204).end();
 });
 
