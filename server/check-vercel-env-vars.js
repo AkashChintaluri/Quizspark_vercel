@@ -3,7 +3,7 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
-const checkVercelEnv = async () => {
+const checkVercelEnvVars = async () => {
   try {
     console.log('Checking Vercel environment variables...');
     
@@ -27,22 +27,14 @@ const checkVercelEnv = async () => {
     
     // Check the environment variables for the frontend
     try {
-      const { stdout } = await execAsync('vercel env ls quizspark-smoky.vercel.app');
-      console.log('Frontend environment variables:', stdout);
+      const { stdout } = await execAsync('vercel env ls');
+      console.log('Vercel environment variables:', stdout);
     } catch (error) {
-      console.error('Error checking frontend environment variables:', error);
-    }
-    
-    // Check the environment variables for the backend
-    try {
-      const { stdout } = await execAsync('vercel env ls quizsparkbackend.vercel.app');
-      console.log('Backend environment variables:', stdout);
-    } catch (error) {
-      console.error('Error checking backend environment variables:', error);
+      console.error('Error checking Vercel environment variables:', error);
     }
   } catch (error) {
     console.error('Error checking Vercel environment variables:', error);
   }
 };
 
-checkVercelEnv(); 
+checkVercelEnvVars(); 

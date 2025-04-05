@@ -1,39 +1,39 @@
-import dotenv from 'dotenv';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
-dotenv.config();
+const execAsync = promisify(exec);
 
-const checkEnv = () => {
+const checkEnv = async () => {
   try {
-    console.log('Checking environment variables...');
+    console.log('Checking Vercel environment variables...');
     
-    // Check if the Supabase URL and key are set
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
-      console.error('Supabase URL or key is not set');
+    // Check if the Vercel CLI is installed
+    try {
+      await execAsync('vercel --version');
+      console.log('Vercel CLI is installed');
+    } catch (error) {
+      console.error('Vercel CLI is not installed');
       return;
     }
     
-    console.log('Supabase URL:', process.env.SUPABASE_URL);
-    console.log('Supabase key is set:', !!process.env.SUPABASE_KEY);
-    
-    // Check if the API URL is set
-    if (!process.env.API_URL) {
-      console.error('API URL is not set');
+    // Check if the user is logged in
+    try {
+      await execAsync('vercel whoami');
+      console.log('User is logged in to Vercel');
+    } catch (error) {
+      console.error('User is not logged in to Vercel');
       return;
     }
     
-    console.log('API URL:', process.env.API_URL);
-    
-    // Check if the frontend URL is set
-    if (!process.env.FRONTEND_URL) {
-      console.error('Frontend URL is not set');
-      return;
+    // Check the environment variables
+    try {
+      const { stdout } = await execAsync('vercel env ls');
+      console.log('Environment variables:', stdout);
+    } catch (error) {
+      console.error('Error checking environment variables:', error);
     }
-    
-    console.log('Frontend URL:', process.env.FRONTEND_URL);
-    
-    console.log('Environment variables are valid');
   } catch (error) {
-    console.error('Error checking environment variables:', error);
+    console.error('Error checking Vercel environment variables:', error);
   }
 };
 
