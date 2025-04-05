@@ -1,7 +1,7 @@
 // src/components/SignupForm.jsx
 import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../config';
 import './SignupForm.css';
 
 function SignupForm() {
@@ -35,7 +35,7 @@ function SignupForm() {
         setIsLoading(true);
 
         try {
-            const response = await axios.post('http://localhost:3000/signup', formData);
+            const response = await api.post('/signup', formData);
             setShowPopup(true);
             console.log('Signup successful:', response.data);
         } catch (error) {

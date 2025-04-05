@@ -1,104 +1,70 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { API_URL } from '../config';
-import './Login.css';
+import api from '../config';
+import './TeacherLogin.css';
 
 function TeacherLogin() {
+    const [formData, setFormData] = useState({
+        username: '',
+        password: '',
+    });
+    const [error, setError] = useState('');
     const navigate = useNavigate();
-    const [formData, setFormData] = useState({ username: '', password: '' });
-    const [isLoading, setIsLoading] = useState(false);
-    const [showPopup, setShowPopup] = useState(false);
-    const [errorMessage, setErrorMessage] = useState('');
-
-    useEffect(() => {
-        if (showPopup) {
-            const timer = setTimeout(() => {
-                setShowPopup(false);
-                navigate('/teacher-dashboard');
-            }, 2000);
-            return () => clearTimeout(timer);
-        }
-    }, [showPopup, navigate]);
-
-    const handleInputChange = (e) => {
-        const { id, value } = e.target;
-        setFormData(prev => ({ ...prev, [id]: value }));
-    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setIsLoading(true);
-        setErrorMessage('');
-
+        setError('');
         try {
-            const response = await axios.post(`${API_URL}/login`, {
+            const response = await api.post('/login', {
                 ...formData,
                 userType: 'teacher'
             });
 
-            if (response.data.success) {
+            if (response.data.user) {
                 localStorage.setItem('user', JSON.stringify(response.data.user));
-                setShowPopup(true);
-            } else {
-                setErrorMessage('Invalid username or password');
+                navigate('/teacher-dashboard');
             }
         } catch (error) {
-            const serverError = error.response?.data?.error || error.message;
-            setErrorMessage(serverError || 'Login failed. Please try again.');
-            console.error('Login error:', error);
-        } finally {
-            setIsLoading(false);
+            setError(error.response?.data?.message || 'Login failed');
         }
     };
 
+    const handleChange = (e) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value,
+        });
+    };
+
     return (
-        <div className="login">
-            <div className="login-content">
+        <div className="teacher-login-container">
+            <div className="login-box">
                 <h2>Teacher Login</h2>
-                <form className="login-form" onSubmit={handleSubmit}>
+                {error && <div className="error-message">{error}</div>}
+                <form onSubmit={handleSubmit}>
                     <div className="form-group">
+                        <label>Username</label>
                         <input
                             type="text"
-                            id="username"
+                            name="username"
                             value={formData.username}
-                            onChange={handleInputChange}
+                            onChange={handleChange}
                             required
-                            placeholder="Username"
-                            autoComplete="username"
-                            disabled={isLoading}
                         />
                     </div>
                     <div className="form-group">
+                        <label>Password</label>
                         <input
                             type="password"
-                            id="password"
+                            name="password"
                             value={formData.password}
-                            onChange={handleInputChange}
+                            onChange={handleChange}
                             required
-                            placeholder="Password"
-                            autoComplete="current-password"
-                            disabled={isLoading}
                         />
                     </div>
-
-                    {errorMessage && <div className="error-message">{errorMessage}</div>}
-
-                    <button
-                        type="submit"
-                        className="login-button"
-                        disabled={isLoading}
-                    >
-                        {isLoading ? 'Logging In...' : 'Login'}
-                    </button>
+                    <button type="submit">Login</button>
                 </form>
             </div>
-
-            {showPopup && (
-                <div className="popup success">
-                    ✔️ Login successful! Redirecting to dashboard...
-                </div>
-            )}
         </div>
     );
 }

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import api from '../config';
 import './TeacherDashboard.css';
 import './MakeQuizzes.css';
 import { Bar } from 'react-chartjs-2';
@@ -42,7 +42,7 @@ function Sidebar({ activeTab, setActiveTab, currentUser }) {
         const fetchNotificationsCount = async () => {
             if (!currentUser?.id) return;
             try {
-                const response = await axios.get(`http://localhost:3000/api/retest-requests/teacher/${currentUser.id}`);
+                const response = await api.get(`/api/retest-requests/teacher/${currentUser.id}`);
                 const unreadCount = response.data.filter(r => r.status === 'pending').length;
                 setNotificationsCount(unreadCount);
             } catch (error) {
@@ -132,8 +132,8 @@ function HomeContent({ currentUser, setActiveTab }) {
             setError('');
             try {
                 const [quizzesResponse, notificationsResponse] = await Promise.all([
-                    axios.get(`http://localhost:3000/api/quizzes/created/${currentUser.id}`),
-                    axios.get(`http://localhost:3000/api/retest-requests/teacher/${currentUser.id}`)
+                    api.get(`/api/quizzes/created/${currentUser.id}`),
+                    api.get(`/api/retest-requests/teacher/${currentUser.id}`)
                 ]);
 
                 if (quizzesResponse.status === 200) {
@@ -208,7 +208,7 @@ function HomeContent({ currentUser, setActiveTab }) {
 
     const handleSaveChanges = async () => {
         try {
-            const response = await axios.put(`http://localhost:3000/api/quizzes/${selectedQuiz.quiz_id}`, {
+            const response = await api.put(`/api/quizzes/${selectedQuiz.quiz_id}`, {
                 quiz_name: editQuizData.quiz_name,
                 due_date: editQuizData.due_date,
                 questions: { questions: editQuizData.questions },
@@ -545,7 +545,7 @@ function MakeQuizzesContent({ currentUser }) {
         };
 
         try {
-            const response = await axios.post('http://localhost:3000/api/quizzes', quizData, {
+            const response = await api.post('/api/quizzes', quizData, {
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -675,7 +675,7 @@ function ResultsContent({ currentUser, initialQuizCode }) {
         setQuizName('');
 
         try {
-            const response = await axios.get(`http://localhost:3000/api/quiz-attempts/${code}`);
+            const response = await api.get(`/api/quiz-attempts/${code}`);
             if (response.status === 200) {
                 setAttempts(response.data);
                 setFilteredAttempts(response.data);
@@ -930,7 +930,7 @@ function NotificationsContent({ currentUser }) {
             setLoading(true);
             setError('');
             try {
-                const response = await axios.get(`http://localhost:3000/api/retest-requests/teacher/${currentUser.id}`);
+                const response = await api.get(`/api/retest-requests/teacher/${currentUser.id}`);
                 setNotifications(response.data);
             } catch (error) {
                 console.error('Error fetching notifications:', error);
@@ -950,7 +950,7 @@ function NotificationsContent({ currentUser }) {
         }
 
         try {
-            const response = await axios.put(`http://localhost:3000/api/retest-requests/${requestId}`, {
+            const response = await api.put(`/api/retest-requests/${requestId}`, {
                 status,
                 teacher_password: teacherPassword,
             });
@@ -1089,7 +1089,7 @@ function SettingsContent({ currentUser }) {
         setIsLoading(true);
         setMessage('');
         try {
-            const response = await axios.post('http://localhost:3000/change-password', {
+            const response = await api.post('/change-password', {
                 ...formData,
                 username: currentUser.username,
                 userType: 'teacher',
@@ -1118,7 +1118,7 @@ function SettingsContent({ currentUser }) {
         setIsLoading(true);
         setMessage('');
         try {
-            const response = await axios.put(`http://localhost:3000/api/teachers/${currentUser.id}`, {
+            const response = await api.put(`/api/teachers/${currentUser.id}`, {
                 ...profileData
             });
 
