@@ -2,14 +2,26 @@
   "version": 2,
   "builds": [
     {
-      "src": "server/pgServer.js",
-      "use": "@vercel/node"
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist",
+        "installCommand": "npm install",
+        "buildCommand": "npm run build"
+      }
     }
   ],
   "routes": [
     {
+      "src": "/api/(.*)",
+      "dest": "https://quizsparkbackend.vercel.app/api/$1"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
       "src": "/(.*)",
-      "dest": "server/pgServer.js"
+      "dest": "/index.html"
     }
   ],
   "env": {
