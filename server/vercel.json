@@ -10,11 +10,8 @@
       }
     }
   ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "pgServer.js"
-    }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/pgServer.js" }
   ],
   "headers": [
     {

@@ -11,17 +11,19 @@
       }
     }
   ],
-  "routes": [
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://quizsparkbackend.vercel.app/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
     {
-      "src": "/api/(.*)",
-      "dest": "https://quizsparkbackend.vercel.app/api/$1"
-    },
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "https://quizsparkbackend.vercel.app" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PUT, DELETE, OPTIONS, PATCH" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type, Authorization, X-Requested-With, Accept" },
+        { "key": "Access-Control-Allow-Credentials", "value": "true" }
+      ]
     }
   ],
   "env": {

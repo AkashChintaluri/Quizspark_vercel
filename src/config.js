@@ -30,10 +30,6 @@ const api = axios.create({
 // Add request interceptor to log requests
 api.interceptors.request.use(
   config => {
-    // Add CORS headers to every request
-    config.headers['Access-Control-Allow-Origin'] = 'https://quizspark-smoky.vercel.app';
-    config.headers['Access-Control-Allow-Credentials'] = 'true';
-    
     console.log(`Making ${config.method.toUpperCase()} request to ${config.url}`);
     return config;
   },
