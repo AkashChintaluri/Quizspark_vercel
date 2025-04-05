@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../config';
-import './TeacherLogin.css';
+import './Login.css';
 
 function TeacherLogin() {
     const [formData, setFormData] = useState({
@@ -37,29 +37,29 @@ function TeacherLogin() {
     };
 
     return (
-        <div className="teacher-login-container">
-            <div className="login-box">
+        <div className="login">
+            <div className="login-content">
                 <h2>Teacher Login</h2>
                 {error && <div className="error-message">{error}</div>}
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <label>Username</label>
                         <input
                             type="text"
                             name="username"
                             value={formData.username}
                             onChange={handleChange}
                             required
+                            placeholder="Username"
                         />
                     </div>
                     <div className="form-group">
-                        <label>Password</label>
                         <input
                             type="password"
                             name="password"
                             value={formData.password}
                             onChange={handleChange}
                             required
+                            placeholder="Password"
                         />
                     </div>
                     <button type="submit">Login</button>
