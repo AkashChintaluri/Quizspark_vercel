@@ -20,9 +20,24 @@ const api = axios.create({
   baseURL: getApiUrl(),
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json'
-  }
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  },
+  // Add timeout to prevent hanging requests
+  timeout: 10000
 });
+
+// Add request interceptor to handle CORS preflight
+api.interceptors.request.use(
+  config => {
+    // Add origin header for CORS
+    config.headers['Origin'] = window.location.origin;
+    return config;
+  },
+  error => {
+    return Promise.reject(error);
+  }
+);
 
 // Add response interceptor for better error handling
 api.interceptors.response.use(

@@ -10,6 +10,7 @@ import SignupForm from './pages/SignupForm';
 import StudentDashboard from './pages/StudentDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import Header from './components/Header';
+import CorsTest from './pages/CorsTest';
 
 const Layout = ({ children }) => {
     const location = useLocation();
@@ -36,6 +37,7 @@ function App() {
                         <Route path="/student-login" element={<Layout><StudentLogin /></Layout>} />
                         <Route path="/teacher-login" element={<Layout><TeacherLogin /></Layout>} />
                         <Route path="/signup" element={<Layout><SignupForm /></Layout>} />
+                        <Route path="/cors-test" element={<Layout><CorsTest /></Layout>} />
 
                         {/* Student Dashboard Routes */}
                         <Route path="/student-dashboard/*" element={<StudentDashboard />}>

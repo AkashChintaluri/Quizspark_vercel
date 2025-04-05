@@ -16,15 +16,25 @@ app.use((req, res, next) => {
 
 // Configure CORS
 app.use(cors({
-    origin: 'https://quizspark-smoky.vercel.app',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    origin: ['https://quizspark-smoky.vercel.app', 'http://localhost:5173', 'http://localhost:3000'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
     credentials: true,
-    preflightContinue: false
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+    maxAge: 86400
 }));
 
-// Handle preflight requests
-app.options('*', cors());
+// Handle preflight requests explicitly
+app.options('*', (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || 'https://quizspark-smoky.vercel.app');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Max-Age', '86400');
+    res.status(204).end();
+});
 
 app.use(express.json());
 
@@ -44,13 +54,37 @@ app.get('/', (req, res) => {
     res.json({ status: 'ok', message: 'QuizSpark API is running' });
 });
 
+// Add CORS test endpoint
+app.get('/cors-test', (req, res) => {
+    res.json({ 
+        status: 'ok', 
+        message: 'CORS test successful',
+        origin: req.headers.origin,
+        method: req.method
+    });
+});
+
 // Create a new pool for each request
 const getPool = () => {
     try {
+        if (!process.env.DATABASE_URL) {
+            throw new Error('DATABASE_URL environment variable is not set');
+        }
         return new Pool({
             connectionString: process.env.DATABASE_URL,
             ssl: {
                 rejectUnauthorized: false
+            },
+            max: 1, // Limit pool size for serverless
+            idleTimeoutMillis: 30000,
+            connectionTimeoutMillis: 20000, // Increased timeout
+            application_name: 'quizspark-backend',
+            keepalive: true,
+            keepaliveInitialDelayMillis: 10000,
+            // Add DNS resolution options
+            dns: {
+                family: 4, // Force IPv4
+                hints: 0
             }
         });
     } catch (error) {
@@ -68,6 +102,15 @@ const handleDatabaseOperation = async (operation) => {
     } catch (error) {
         console.error('Database operation error:', error);
         console.error('Stack:', error.stack);
+        if (error.code === 'ECONNREFUSED') {
+            throw new Error('Database connection failed. Please check your connection string.');
+        }
+        if (error.code === '42P01') {
+            throw new Error('Database table not found. Please check your database schema.');
+        }
+        if (error.code === 'ENOTFOUND') {
+            throw new Error('Database host not found. Please check your connection string and DNS settings.');
+        }
         throw error;
     } finally {
         try {
@@ -77,6 +120,27 @@ const handleDatabaseOperation = async (operation) => {
         }
     }
 };
+
+// Add database connection test endpoint
+app.get('/test-db', async (req, res) => {
+    try {
+        const pool = getPool();
+        const result = await pool.query('SELECT NOW()');
+        await pool.end();
+        res.json({ 
+            status: 'ok', 
+            message: 'Database connection successful',
+            timestamp: result.rows[0].now
+        });
+    } catch (error) {
+        console.error('Database connection test failed:', error);
+        res.status(500).json({ 
+            status: 'error', 
+            message: 'Database connection failed',
+            error: error.message
+        });
+    }
+});
 
 // Define all routes directly on the app
 app.post('/signup', async (req, res) => {
@@ -115,6 +179,13 @@ app.post('/login', async (req, res) => {
         });
     }
 
+    if (!['student', 'teacher'].includes(userType)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid user type'
+        });
+    }
+
     const table = userType === 'student' ? 'student_login' : 'teacher_login';
     console.log('Using table:', table);
 
@@ -148,6 +219,16 @@ app.post('/login', async (req, res) => {
     } catch (error) {
         console.error('Login error:', error);
         console.error('Stack:', error.stack);
+        
+        // Handle specific database errors
+        if (error.message.includes('DATABASE_URL')) {
+            return res.status(500).json({
+                success: false,
+                error: 'Database configuration error',
+                details: 'Please check database connection settings'
+            });
+        }
+        
         res.status(500).json({ 
             success: false,
             error: 'Login failed',
