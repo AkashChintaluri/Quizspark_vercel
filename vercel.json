@@ -21,7 +21,7 @@
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
-          "value": "https://quizsparkbackend.vercel.app"
+          "value": "*"
         },
         {
           "key": "Access-Control-Allow-Methods",
