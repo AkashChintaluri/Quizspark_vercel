@@ -4,9 +4,9 @@ const getApiUrl = () => {
     return import.meta.env.VITE_API_URL;
   }
   
-  // In development, use localhost
+  // In development, use localhost proxy
   if (import.meta.env.DEV) {
-    return 'http://localhost:3000';
+    return 'http://localhost:3001';
   }
   
   // In production, use the backend URL
@@ -26,18 +26,6 @@ const api = axios.create({
   // Add timeout to prevent hanging requests
   timeout: 10000
 });
-
-// Add request interceptor to handle CORS preflight
-api.interceptors.request.use(
-  config => {
-    // Add origin header for CORS
-    config.headers['Origin'] = window.location.origin;
-    return config;
-  },
-  error => {
-    return Promise.reject(error);
-  }
-);
 
 // Add response interceptor for better error handling
 api.interceptors.response.use(

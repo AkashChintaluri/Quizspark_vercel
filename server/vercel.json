@@ -15,9 +15,9 @@
       "src": "/login",
       "methods": ["POST", "OPTIONS"],
       "headers": {
-        "Access-Control-Allow-Origin": "https://quizspark-smoky.vercel.app",
+        "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Accept, Origin",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Accept",
         "Access-Control-Allow-Credentials": "true",
         "Access-Control-Max-Age": "86400"
       },
@@ -27,9 +27,9 @@
       "src": "/(.*)",
       "dest": "pgServer.js",
       "headers": {
-        "Access-Control-Allow-Origin": "https://quizspark-smoky.vercel.app",
+        "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Accept, Origin",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Requested-With, Accept",
         "Access-Control-Allow-Credentials": "true",
         "Access-Control-Max-Age": "86400",
         "Content-Type": "application/json"
