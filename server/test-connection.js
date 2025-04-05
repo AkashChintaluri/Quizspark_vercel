@@ -3,12 +3,12 @@ import fetch from 'node-fetch';
 const testBackend = async () => {
   try {
     console.log('Testing connection to backend...');
-    const response = await fetch('https://quizspark-backend.vercel.app/');
+    const response = await fetch('https://quizsparkbackend.vercel.app/');
     const data = await response.json();
     console.log('Backend is accessible:', data);
     
     console.log('\nTesting CORS headers...');
-    const corsResponse = await fetch('https://quizspark-backend.vercel.app/cors-test', {
+    const corsResponse = await fetch('https://quizsparkbackend.vercel.app/cors-test', {
       method: 'GET',
       headers: {
         'Origin': 'https://quizspark-smoky.vercel.app',

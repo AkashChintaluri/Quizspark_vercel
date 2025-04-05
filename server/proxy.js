@@ -13,7 +13,7 @@ app.use(cors({
 
 // Proxy configuration
 const proxyOptions = {
-  target: 'https://quizspark-backend.vercel.app',
+  target: 'https://quizsparkbackend.vercel.app',
   changeOrigin: true,
   pathRewrite: {
     '^/api': '' // Remove /api prefix when forwarding

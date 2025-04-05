@@ -27,7 +27,7 @@ const checkInspect = async () => {
     
     // Check the deployment inspect
     try {
-      const { stdout } = await execAsync('vercel inspect quizspark-backend.vercel.app');
+      const { stdout } = await execAsync('vercel inspect quizsparkbackend.vercel.app');
       console.log('Deployment inspect:', stdout);
     } catch (error) {
       console.error('Error checking deployment inspect:', error);

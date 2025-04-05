@@ -27,7 +27,7 @@ const checkLogs = async () => {
     
     // Check the deployment logs
     try {
-      const { stdout } = await execAsync('vercel logs quizspark-backend.vercel.app');
+      const { stdout } = await execAsync('vercel logs quizsparkbackend.vercel.app');
       console.log('Deployment logs:', stdout);
     } catch (error) {
       console.error('Error checking deployment logs:', error);

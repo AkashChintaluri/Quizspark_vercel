@@ -5,12 +5,12 @@ const checkDeployment = async () => {
     console.log('Checking Vercel deployment...');
     
     // Check the main endpoint
-    const mainResponse = await fetch('https://quizspark-backend.vercel.app/');
+    const mainResponse = await fetch('https://quizsparkbackend.vercel.app/');
     console.log('Main endpoint status:', mainResponse.status);
     console.log('Main endpoint headers:', mainResponse.headers);
     
     // Check the CORS test endpoint
-    const corsResponse = await fetch('https://quizspark-backend.vercel.app/cors-test', {
+    const corsResponse = await fetch('https://quizsparkbackend.vercel.app/cors-test', {
       method: 'OPTIONS',
       headers: {
         'Origin': 'https://quizspark-smoky.vercel.app',
@@ -23,7 +23,7 @@ const checkDeployment = async () => {
     console.log('CORS preflight headers:', corsResponse.headers);
     
     // Check if the backend is using Supabase
-    const dbResponse = await fetch('https://quizspark-backend.vercel.app/test-db');
+    const dbResponse = await fetch('https://quizsparkbackend.vercel.app/test-db');
     console.log('Database test status:', dbResponse.status);
     
     if (dbResponse.ok) {

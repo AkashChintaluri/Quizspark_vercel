@@ -35,7 +35,7 @@ app.use(cors(corsOptions));
 // Handle preflight requests explicitly
 app.options('*', (req, res) => {
     // Set CORS headers for preflight requests
-    res.setHeader('Access-Control-Allow-Origin', 'https://quizspark-smoky.vercel.app');
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || 'https://quizspark-smoky.vercel.app');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
