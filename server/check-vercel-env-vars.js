@@ -27,10 +27,20 @@ const checkVercelEnvVars = async () => {
     
     // Check the environment variables for the frontend
     try {
-      const { stdout } = await execAsync('vercel env ls');
-      console.log('Vercel environment variables:', stdout);
+      console.log('Checking frontend environment variables...');
+      const { stdout } = await execAsync('vercel env ls quizspark-smoky.vercel.app');
+      console.log('Frontend environment variables:', stdout);
     } catch (error) {
-      console.error('Error checking Vercel environment variables:', error);
+      console.error('Error checking frontend environment variables:', error);
+    }
+    
+    // Check the environment variables for the backend
+    try {
+      console.log('Checking backend environment variables...');
+      const { stdout } = await execAsync('vercel env ls quizsparkbackend.vercel.app');
+      console.log('Backend environment variables:', stdout);
+    } catch (error) {
+      console.error('Error checking backend environment variables:', error);
     }
   } catch (error) {
     console.error('Error checking Vercel environment variables:', error);

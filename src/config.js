@@ -1,5 +1,10 @@
 // Get the API URL from environment variables or use a default value
 const getApiUrl = () => {
+  // Hardcode the backend URL for now
+  return 'https://quizsparkbackend.vercel.app';
+  
+  // The following code is commented out for now
+  /*
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
@@ -11,6 +16,7 @@ const getApiUrl = () => {
   
   // In production, use the backend URL
   return 'https://quizsparkbackend.vercel.app';
+  */
 };
 
 // Create axios instance with default config
