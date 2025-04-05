@@ -18,8 +18,8 @@ app.use((req, res, next) => {
 });
 
 // Configure CORS
-app.use(cors({
-    origin: 'https://quizspark-smoky.vercel.app',
+const corsOptions = {
+    origin: ['https://quizspark-smoky.vercel.app', 'http://localhost:5173'],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
     exposedHeaders: ['Content-Range', 'X-Content-Range'],
@@ -27,27 +27,12 @@ app.use(cors({
     preflightContinue: false,
     optionsSuccessStatus: 204,
     maxAge: 86400
-}));
+};
+
+app.use(cors(corsOptions));
 
 // Handle preflight requests explicitly
-app.options('*', (req, res) => {
-    // Set CORS headers for preflight requests
-    res.setHeader('Access-Control-Allow-Origin', 'https://quizspark-smoky.vercel.app');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Max-Age', '86400');
-    
-    // Log preflight request for debugging
-    console.log('Preflight request received:', {
-        method: req.method,
-        path: req.path,
-        origin: req.headers.origin,
-        headers: req.headers
-    });
-    
-    res.status(204).end();
-});
+app.options('*', cors(corsOptions));
 
 app.use(express.json());
 
