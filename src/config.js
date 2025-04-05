@@ -24,11 +24,19 @@ const api = axios.create({
     'Accept': 'application/json'
   },
   // Add timeout to prevent hanging requests
-  timeout: 10000,
-  // Add additional axios config for CORS
-  xsrfCookieName: 'XSRF-TOKEN',
-  xsrfHeaderName: 'X-XSRF-TOKEN'
+  timeout: 10000
 });
+
+// Add request interceptor to log requests
+api.interceptors.request.use(
+  config => {
+    console.log(`Making ${config.method.toUpperCase()} request to ${config.url}`);
+    return config;
+  },
+  error => {
+    return Promise.reject(error);
+  }
+);
 
 // Add response interceptor for better error handling
 api.interceptors.response.use(

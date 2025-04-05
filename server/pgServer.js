@@ -4,13 +4,16 @@ const { Pool } = pkg;
 import cors from 'cors';
 import dotenv from 'dotenv';
 
+
+
+
 dotenv.config();
 
 const app = express();
 
 // Log all requests
 app.use((req, res, next) => {
-    console.log(`${req.method} ${req.url}`);
+    console.log(`${req.method} ${req.url} - Origin: ${req.headers.origin}`);
     next();
 });
 
@@ -28,11 +31,21 @@ app.use(cors({
 
 // Handle preflight requests explicitly
 app.options('*', (req, res) => {
+    // Set CORS headers for preflight requests
     res.setHeader('Access-Control-Allow-Origin', 'https://quizspark-smoky.vercel.app');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Max-Age', '86400');
+    
+    // Log preflight request for debugging
+    console.log('Preflight request received:', {
+        method: req.method,
+        path: req.path,
+        origin: req.headers.origin,
+        headers: req.headers
+    });
+    
     res.status(204).end();
 });
 

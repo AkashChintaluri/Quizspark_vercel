@@ -22,21 +22,10 @@
       ]
     }
   ],
-  "routes": [
-    {
-      "src": "/cors-test",
-      "methods": ["GET", "OPTIONS"],
-      "dest": "pgServer.js"
-    },
-    {
-      "src": "/login",
-      "methods": ["POST", "OPTIONS"],
-      "dest": "pgServer.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "pgServer.js"
-    }
+  "rewrites": [
+    { "source": "/cors-test", "destination": "/pgServer.js" },
+    { "source": "/login", "destination": "/pgServer.js" },
+    { "source": "/(.*)", "destination": "/pgServer.js" }
   ],
   "env": {
     "NODE_ENV": "production",
